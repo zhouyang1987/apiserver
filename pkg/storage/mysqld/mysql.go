@@ -1,6 +1,6 @@
 package mysqld
 
-import (
+/*import (
 	"io"
 
 	"apiserver/pkg/util/logger"
@@ -52,4 +52,4 @@ func Close(db Closer) {
 			log.Warning(err)
 		}
 	}
-}
+}*/
