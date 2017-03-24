@@ -1,15 +1,14 @@
 package mysqld
 
-/*import (
+import (
 	"io"
 
-	"apiserver/pkg/util/logger"
+	"apiserver/pkg/configz"
+	"apiserver/pkg/util/log"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/go-xorm/xorm"
 )
-
-var log = logger.New("")
 
 // --------------
 // Engine
@@ -18,17 +17,23 @@ type Engine struct {
 	*xorm.Engine
 }
 
-func New(driver, dsn string) (*Engine, error) {
-	engine, err := xorm.NewEngine(driver, dsn)
-	if err != nil {
-		return nil, err
-	}
+var (
+	engine *Engine
+)
 
+func init() {
+	eng, err := xorm.NewEngine(configz.GetString("mysql", "dirver", "mysql"), configz.GetString("mysql", "dsn", ""))
+	if err != nil {
+		log.Fatalf("init mysql connection err: %v", err)
+	}
+	engine = &Engine{Engine: eng}
 	// cache
 	// cacher := xorm.NewLRUCacher(xorm.NewMemoryStore(), 1000)
 	// engine.SetDefaultCacher(cacher)
+}
 
-	return &Engine{engine}, nil
+func GetEngine() *Engine {
+	return engine
 }
 
 func (engine *Engine) Debug() {
@@ -38,9 +43,6 @@ func (engine *Engine) Debug() {
 func (engine *Engine) Close() error {
 	return engine.Close()
 }
-
-// -------------------
-// Common
 
 type Closer interface {
 	io.Closer
@@ -52,4 +54,4 @@ func Close(db Closer) {
 			log.Warning(err)
 		}
 	}
-}*/
+}

@@ -17,10 +17,10 @@ package configz
 import (
 	"os"
 
-	"apiserver/pkg/util/log"
+	// "apiserver/pkg/util/log"
 
 	"github.com/Unknwon/goconfig"
-	"github.com/howeyc/fsnotify"
+	// "github.com/howeyc/fsnotify"
 )
 
 var (
@@ -40,34 +40,34 @@ func init() {
 	}
 }
 
-func GetString(section, key, defaults string) {
+func GetString(section, key, defaults string) string {
 	return cfg.MustValue(section, key, defaults)
 }
 
-func (c *ConfigFile) GetStringArray(section, key, delim string) []string {
+func GetStringArray(section, key, delim string) []string {
 	return cfg.MustValueArray(section, key, delim)
 }
 
-func (c *ConfigFile) MustBool(section, key string, defaultVal bool) bool {
+func MustBool(section, key string, defaultVal bool) bool {
 	return cfg.MustBool(section, key, defaultVal)
 }
 
-func (c *ConfigFile) MustFloat64(section, key string, defaultVal float64) float64 {
+func MustFloat64(section, key string, defaultVal float64) float64 {
 	return cfg.MustFloat64(section, key, defaultVal)
 }
 
-func (c *ConfigFile) MustInt(section, key string, defaultVal int) int {
+func MustInt(section, key string, defaultVal int) int {
 	return cfg.MustInt(section, key, defaultVal)
 }
 
-func (c *ConfigFile) MustInt64(section, key string, defaultVal int64) int64 {
+func MustInt64(section, key string, defaultVal int64) int64 {
 	return cfg.MustInt64(section, key, defaultVal)
 }
 
 //watcher notify the config file, when the file was changed, reload the file to memory
-func Heatload() {
+/*func Heatload() {
 	wacther, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Errorf("create the file watcher err: %v", err)
 	}
-}
+}*/

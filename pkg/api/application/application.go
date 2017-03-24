@@ -14,6 +14,7 @@ const (
 	AppSuccessed AppStatus = 1
 	AppFailed    AppStatus = 2
 	AppRunning   AppStatus = 3
+	AppStop      AppStatus = 4
 
 	StartFailed    UpdateStatus = 10
 	StartSuccessed UpdateStatus = 11
@@ -33,20 +34,18 @@ const (
 
 //App is struct of application
 type App struct {
-	Id                       int          `json:"id" xorm:"pk not null autoincr int(11)"`
-	Name                     string       `json:"name" xorm:"varchar(256)"`
-	ReplicationConrollerName string       `json:"replicationConrollerName" xorm:"varchar(256)"`
-	Region                   string       `json:"region" xorm:"varchar(256)"`
-	Memory                   string       `json:"memory" xorm:"varchar(11)"`
-	Cpu                      string       `json:"cpu" xorm:"varchar(11)"`
-	InstanceCount            int32        `json:"instanceCount" xorm:"int(11)"`
-	Envs                     string       `json:"envs" xorm:"varchar(256)"`
-	Ports                    string       `json:"ports" xorm:"varchar(256)"`
-	Image                    string       `json:"image" xorm:"varchar(256)"`
-	Status                   AppStatus    `json:"status" xorm:"int(1)"` //构建中 0 成功 1 失败 2 运行中 3
-	UpdateStatus             UpdateStatus `json:"status" xorm:"int(2)"`
-	UserName                 string       `json:"userName" xorm:"varchar(256)"`
-	Remark                   string       `json:"remark" xorm:"varchar(1024)"`
+	Id            int       `json:"id" xorm:"pk not null autoincr int(11)"`
+	Name          string    `json:"name" xorm:"varchar(256)"`
+	Region        string    `json:"region" xorm:"varchar(256)"`
+	Memory        string    `json:"memory" xorm:"varchar(11)"`
+	Cpu           string    `json:"cpu" xorm:"varchar(11)"`
+	InstanceCount int32     `json:"instanceCount" xorm:"int(11)"`
+	Envs          []string  `json:"envs" xorm:"varchar(256)"`
+	Ports         []string  `json:"ports" xorm:"varchar(256)"`
+	Image         string    `json:"image" xorm:"varchar(256)"`
+	Status        AppStatus `json:"status" xorm:"int(1)"` //构建中 0 成功 1 失败 2 运行中 3 停止 4
+	UserName      string    `json:"userName" xorm:"varchar(256)"`
+	Remark        string    `json:"remark" xorm:"varchar(1024)"`
 }
 
 func (app *App) String() string {

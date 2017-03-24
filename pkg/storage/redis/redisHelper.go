@@ -4,48 +4,46 @@ import (
 	"errors"
 	"time"
 
-	"sync/cmd/app/options"
+	"apiserver/pkg/configz"
 
 	"gopkg.in/redis.v5"
 )
 
-/*type RedisClient struct {
-	*redis.Client
-}
-
 var (
-	Client *RedisClient
+	client *redis.Client
 )
 
-func NewClient() {
-	if cfg.Redis.RequiredPW {
-		Client = &RedisClient{Client: redis.NewClient(&redis.Options{
-			Addr:     cfg.Addr,
-			Password: cfg.Password,
-			DB:       cfg.DB,
-			PoolSize: cfg.PoolSize,
-		})}
+func init() {
+	addr := configz.GetString("redis", "address", "0.0.0.0:6379")
+	password := configz.GetString("redis", "password", "")
+	db := configz.MustInt("redis", "db", 0)
+	poolSize := configz.MustInt("redis", "poolSize", 10)
+	if configz.MustBool("redis", "requiered_password", false) {
+		client = redis.NewClient(&redis.Options{
+			Addr:     addr,
+			Password: password,
+			DB:       db,
+			PoolSize: poolSize,
+		})
+	} else {
+		client = redis.NewClient(&redis.Options{
+			Addr:     addr,
+			DB:       db,
+			PoolSize: poolSize,
+		})
 	}
-
-	Client = &RedisClient{Client: redis.NewClient(&redis.Options{
-		Addr:     cfg.Addr,
-		DB:       cfg.DB,
-		PoolSize: cfg.PoolSize,
-	})}
-
 }
 
-func (this *RedisClient) Set(key string, val interface{}, expiredTime int) (string, error) {
-	result, err := this.Client.Set(key, val, time.Minute*30).Result()
+func Set(key string, val interface{}, expiredTime int) (string, error) {
+	result, err := client.Set(key, val, time.Minute*30).Result()
 	if err != nil {
-		log.Errorf("set value err:%v", err)
 		return "", err
 	}
 	return result, nil
 }
 
-func (this *RedisClient) Get(key string) (string, error) {
-	result, err := this.Client.Get(key).Result()
+func Get(key string) (string, error) {
+	result, err := client.Get(key).Result()
 	if err != nil {
 		return "", err
 	}
@@ -55,7 +53,6 @@ func (this *RedisClient) Get(key string) (string, error) {
 	return result, nil
 }
 
-func (this *RedisClient) MutilSet() {
+func MutilSet() {
 	// this.Client.Pipelined(fn).
 }
-*/
