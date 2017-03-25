@@ -20,6 +20,7 @@ var (
 
 func Register(rout *mux.Router) {
 	r.RegisterHttpHandler(rout, "/app", "POST", CreateApplication)
+	r.RegisterHttpHandler(rout, "/app", "GET", GetApplication)
 }
 
 func CreateApplication(request *http.Request) (string, interface{}) {
@@ -58,4 +59,44 @@ func CreateApplication(request *http.Request) (string, interface{}) {
 	//TODO 掉用k8s的pkg下的方法去获取svc ns rc的状态
 	//当ns，svc，rc都创建成功后，进行本地数据库的数据插入操作
 	return "", nil
+}
+
+func GetApplication(request *http.Request) (string, interface{}) {
+	//获取请求数据，解析成app对象
+	/*decoder := json.NewDecoder(request.Body)
+	app := &application.App{}
+	err := decoder.Decode(app)
+	if err != nil {
+		//TODO
+		log.Error(err)
+	}
+	ns := resouce.NewNS(app)
+	svc := resouce.NewSVC(app)
+	rc := resouce.NewRC(app)
+
+	namespace, err := k8sClient.CoreV1().Namespaces().Create(ns)
+	if err != nil {
+		//TODO
+		log.Error(err)
+	}
+	log.Info(namespace)
+	service, err := k8sClient.CoreV1().Services(ns.Name).Create(svc)
+	if err != nil {
+		//TODO
+		log.Error(err)
+	}
+	log.Info(service)
+
+	replication, err := k8sClient.CoreV1().ReplicationControllers(ns.Name).Create(rc)
+	if err != nil {
+		//TODO
+		log.Error(err)
+	}
+	log.Info(replication)
+
+	//TODO 掉用k8s的pkg下的方法去获取svc ns rc的状态
+	//当ns，svc，rc都创建成功后，进行本地数据库的数据插入操作
+	return "", nil*/
+	podlist, err := k8sClient.CoreV1().ReplicationControllers("default").List(v1.ListOptions{})
+	log.Info(podlist)
 }

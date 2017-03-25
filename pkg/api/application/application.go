@@ -60,18 +60,42 @@ const (
 
 //App is struct of application
 type App struct {
-	Id            int       `json:"id" xorm:"pk not null autoincr int(11)"`
-	Name          string    `json:"name" xorm:"varchar(256)"`
-	Region        string    `json:"region" xorm:"varchar(256)"`
-	Memory        string    `json:"memory" xorm:"varchar(11)"`
-	Cpu           string    `json:"cpu" xorm:"varchar(11)"`
-	InstanceCount int32     `json:"instanceCount" xorm:"int(11)"`
-	Envs          string    `json:"envs" xorm:"varchar(1024)"`
-	Ports         string    `json:"ports" xorm:"varchar(1024)"`
-	Image         string    `json:"image" xorm:""`
-	Status        AppStatus `json:"status" xorm:"int(1)"` //构建中 0 成功 1 失败 2 运行中 3 停止 4
-	UserName      string    `json:"userName" xorm:"varchar(256)"`
-	Remark        string    `json:"remark" xorm:"varchar(1024)"`
+	Id            int               `json:"id" xorm:"pk not null autoincr int(11)"`
+	Name          string            `json:"name" xorm:"varchar(256)"`
+	Region        string            `json:"region" xorm:"varchar(256)"`
+	Memory        string            `json:"memory" xorm:"varchar(11)"`
+	Cpu           string            `json:"cpu" xorm:"varchar(11)"`
+	InstanceCount int32             `json:"instanceCount" xorm:"int(11)"`
+	Envs          map[string]string `json:"envs" xorm:"varchar(1024)"`
+	Ports         []Port            `json:"ports" xorm:"varchar(1024)"`
+	Image         string            `json:"image" xorm:""`
+	Command       []string          `json:"image" xorm:""`
+	Status        AppStatus         `json:"status" xorm:"int(1)"` //构建中 0 成功 1 失败 2 运行中 3 停止 4
+	UserName      string            `json:"userName" xorm:"varchar(256)"`
+	Remark        string            `json:"remark" xorm:"varchar(1024)"`
+	Mount         VolumeMount       `json:"remark" xorm:"varchar(1024)"`
+}
+
+type VolumeMount struct {
+	// This must match the Name of a Volume.
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	// Mounted read-only if true, read-write otherwise (false or unspecified).
+	// Defaults to false.
+	// +optional
+	ReadOnly bool `json:"readOnly,omitempty" protobuf:"varint,2,opt,name=readOnly"`
+	// Path within the container at which the volume should be mounted.  Must
+	// not contain ':'.
+	MountPath string `json:"mountPath" protobuf:"bytes,3,opt,name=mountPath"`
+	// Path within the volume from which the container's volume should be mounted.
+	// Defaults to "" (volume's root).
+	// +optional
+	SubPath string `json:"subPath,omitempty" protobuf:"bytes,4,opt,name=subPath"`
+}
+
+type Port struct {
+	Schame      string
+	ServicePort int
+	TargetPort  int
 }
 
 var (
