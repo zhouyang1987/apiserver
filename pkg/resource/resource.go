@@ -7,15 +7,15 @@ import (
 	metav1 "k8s.io/client-go/pkg/apis/meta/v1"
 )
 
-func newTypeMeta(kind, version string) *metav1.TypeMeta {
-	return &metav1.TypeMeta{
+func newTypeMeta(kind, version string) metav1.TypeMeta {
+	return metav1.TypeMeta{
 		Kind:       kind,
 		APIVersion: version,
 	}
 }
 
-func newOjectMeta(app *application.App) *v1.ObjectMeta {
-	return &v1.ObjectMeta{
+func newOjectMeta(app *application.App) v1.ObjectMeta {
+	return v1.ObjectMeta{
 		Name:      app.Name,
 		Namespace: app.UserName,
 	}
@@ -29,15 +29,19 @@ func newReplicationControllerSpec(app *application.App) *v1.ReplicationControlle
 	return &v1.ReplicationControllerSpec{}
 }
 
-func newServiceSpec(app *application.App) *v1.ServiceSpec {
-	return &v1.ServiceSpec{}
+func newServiceSpec(app *application.App) v1.ServiceSpec {
+	return v1.ServiceSpec{}
 }
 
 func newNamespaceSpec(app *application.App) *v1.NamespaceSpec {
 	return &v1.NamespaceSpec{}
 }
 func NewSVC(app *application.App) *v1.Service {
-	return &v1.Service{}
+	return &v1.Service{
+		TypeMeta:   newTypeMeta("Service", "v1"),
+		ObjectMeta: newOjectMeta(app),
+		Spec:       newServiceSpec(app),
+	}
 }
 
 func NewRC(app *application.App) *v1.ReplicationController {

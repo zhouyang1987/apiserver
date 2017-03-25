@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"apiserver/pkg/api/application"
+	a "apiserver/pkg/apis/app"
 	"apiserver/pkg/componentconfig"
 	"apiserver/pkg/configz"
 	"apiserver/pkg/util/log"
 
-	// "github.com/gorilla/mux"
-	"github.com/emicklei/go-restful"
+	"github.com/gorilla/mux"
+	// "github.com/emicklei/go-restful"
 )
 
 type Apiserver struct {
@@ -45,21 +45,21 @@ func Run(server *Apiserver) error {
 }
 
 func installApiGroup(router *mux.Router) {
-
+	a.Register(router)
 }
 
-func installNodeApi(router *mux.Router) {
+// func installNodeApi(router *mux.Router) {
 
-}
+// }
 
-func installAppApi(router *mux.Router) {
+// func installAppApi(router *mux.Router) {
 
-}
+// }
 
-func installContainerApi(router *mux.Router) {
+// func installContainerApi(router *mux.Router) {
 
-}
+// }
 
-func installDeploymentApi(router *mux.Router) {
+// func installDeploymentApi(router *mux.Router) {
 
-}
+// }
