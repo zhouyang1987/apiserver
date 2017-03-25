@@ -22,9 +22,13 @@ var (
 )
 
 func init() {
+	log.Info(configz.GetString("mysql", "dsn", ""))
 	eng, err := xorm.NewEngine(configz.GetString("mysql", "dirver", "mysql"), configz.GetString("mysql", "dsn", ""))
 	if err != nil {
 		log.Fatalf("init mysql connection err: %v", err)
+	}
+	if err = eng.Ping(); err != nil {
+		log.Fatalf("access the mysql db fail ,the reason is %s", err.Error())
 	}
 	engine = &Engine{Engine: eng}
 	// cache

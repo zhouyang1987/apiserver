@@ -1,17 +1,13 @@
-package apiserver
+package main
 
 import (
-	"flag"
-
-	"apiserver/pkg/util/config"
-)
-
-var (
-	kubeconfig = flag.String("kubeconfig", "config", "--kubeconfig=kubeconfig file path")
-	miniconfig = flag.String("config", "config.json", "--config=config file path")
+	"apiserver/cmd/apiserver/app"
+	"apiserver/pkg/util/log"
 )
 
 func main() {
-	flag.Parse()
-	config.Parse(miniconfig)
+	s := app.NewApiServer()
+	if err := app.Run(s); err != nil {
+		log.Fatalf("start apiserver err: %v", err)
+	}
 }

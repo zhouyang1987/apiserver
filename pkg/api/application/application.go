@@ -1,10 +1,36 @@
 package application
 
 import (
-	"errors"
+	"net/http"
 
+	"apiserver/pkg/storage/mysqld"
 	"apiserver/pkg/util/jsonx"
+	"apiserver/pkg/util/log"
+
+	"github.com/emicklei/go-restful"
 )
+
+func Register(container *restful.Container) {
+	ws := new(restful.WebService)
+	ws.Path("/app").
+		Doc("manage application").
+		Consumes(restful.MIME_JSON, restful.MIME_XML).
+		Produces(restful.MIME_JSON, restful.MIME_XML)
+
+	ws.Route(ws.POST("").To(new(App).Insert).
+		Doc("create application").
+		Produces("CreateApplication").
+		Reads(App{}))
+
+	ws.Route(ws.GET("/{app-id}").To(new(App).QueryOne).
+		// docs
+		Doc("get a app").
+		Operation("findUser").
+		Param(ws.PathParameter("app-id", "identifier of the app").DataType("int")).
+		Writes(App{})) // on the response
+
+	container.Add(ws)
+}
 
 type AppStatus int32
 type UpdateStatus int32
@@ -40,12 +66,23 @@ type App struct {
 	Memory        string    `json:"memory" xorm:"varchar(11)"`
 	Cpu           string    `json:"cpu" xorm:"varchar(11)"`
 	InstanceCount int32     `json:"instanceCount" xorm:"int(11)"`
-	Envs          []string  `json:"envs" xorm:"varchar(256)"`
-	Ports         []string  `json:"ports" xorm:"varchar(256)"`
-	Image         string    `json:"image" xorm:"varchar(256)"`
+	Envs          string    `json:"envs" xorm:"varchar(1024)"`
+	Ports         string    `json:"ports" xorm:"varchar(1024)"`
+	Image         string    `json:"image" xorm:""`
 	Status        AppStatus `json:"status" xorm:"int(1)"` //构建中 0 成功 1 失败 2 运行中 3 停止 4
 	UserName      string    `json:"userName" xorm:"varchar(256)"`
 	Remark        string    `json:"remark" xorm:"varchar(1024)"`
+}
+
+var (
+	engine = mysqld.GetEngine()
+)
+
+func init() {
+	engine.ShowSQL(true)
+	if err := engine.Sync(new(App)); err != nil {
+		log.Fatalf("Sync fail :%s", err.Error())
+	}
 }
 
 func (app *App) String() string {
@@ -57,19 +94,23 @@ func (app *App) String() string {
 	return appStr
 }
 
-func (app *App) Insert() error {
-	_, err := engine.Insert(app)
-
+func (app *App) Insert(request *restful.Request, response *restful.Response) {
+	aps := new(App)
+	err := request.ReadEntity(aps)
 	if err != nil {
-		return err
+		response.AddHeader("Content-Type", "text/plain")
+		response.WriteErrorString(http.StatusInternalServerError, err.Error())
+		return
 	}
-
-	return nil
+	_, err = engine.Insert(aps)
+	if err != nil {
+		return
+	}
+	response.WriteHeaderAndEntity(http.StatusCreated, aps)
 }
 
 func (app *App) Delete() error {
 	_, err := engine.Id(app.Id).Delete(app)
-
 	if err != nil {
 		return err
 	}
@@ -86,27 +127,34 @@ func (app *App) Update() error {
 	return nil
 }
 
-func (app *App) QueryOne() (*App, error) {
-	has, err := engine.Id(app.Id).Get(app)
+func (app *App) QueryOne(request *restful.Request, response *restful.Response) {
+	id := request.PathParameter("app-id")
 
+	log.Debug(id)
+
+	aps := &App{}
+	// engine.Id(id).Get(&aps)
+	_, err := engine.Id(1).Get(aps)
 	if err != nil {
-		return nil, err
+		response.AddHeader("Content-Type", "text/plain")
+		response.WriteErrorString(http.StatusNotFound, err.Error())
+		return
 	}
+	// if !has {
+	// 	response.AddHeader("Content-Type", "text/plain")
+	// 	response.WriteErrorString(http.StatusNotFound, "404: User could not be found.")
+	// 	return
+	// }
 
-	if !has {
-		return nil, errors.New("the query data not exist")
-	}
-
-	return app, nil
+	log.Debugf("%#v", aps)
+	response.WriteEntity(aps)
 }
 
 func (app *App) QuerySet() ([]*App, error) {
 	appSet := []*App{}
 	err := engine.Where("1 and 1 order by id desc").Find(&appSet)
-
 	if err != nil {
 		return nil, err
 	}
-
 	return appSet, nil
 }
