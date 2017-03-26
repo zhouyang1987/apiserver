@@ -1,3 +1,17 @@
+// Copyright © 2017 huang jia <449264675@qq.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package app
 
 import (
@@ -5,8 +19,6 @@ import (
 	"net/http"
 
 	"apiserver/pkg/api/application"
-	"apiserver/pkg/client"
-	"apiserver/pkg/configz"
 	"apiserver/pkg/resource"
 	r "apiserver/pkg/router"
 	"apiserver/pkg/util/log"
@@ -14,13 +26,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var (
-	k8sClient, _ = client.NewK8sClient(configz.GetString("apiserver", "k8s-config", "./config"))
-)
-
 func Register(rout *mux.Router) {
 	r.RegisterHttpHandler(rout, "/app", "POST", CreateApplication)
-	r.RegisterHttpHandler(rout, "/app", "GET", GetApplication)
 }
 
 func CreateApplication(request *http.Request) (string, interface{}) {
@@ -29,74 +36,37 @@ func CreateApplication(request *http.Request) (string, interface{}) {
 	app := &application.App{}
 	err := decoder.Decode(app)
 	if err != nil {
-		//TODO
-		log.Error(err)
+		log.Errorf("decode the request body err:%v", err)
+		return r.StatusBadRequest, "json format error"
 	}
+
+	//create namespace, first query the ns is exsit or not, if not exsit, create it
 	ns := resouce.NewNS(app)
+	if !resouce.ExsitResource(ns) {
+		err := resouce.CreateResource(ns)
+		if err != nil {
+			return r.StatusInternalServerError, err
+		}
+	}
+
+	//create service, first query the svc is exsit or not, if not exsit, create it
 	svc := resouce.NewSVC(app)
+	if !resouce.ExsitResource(svc) {
+		err := resouce.CreateResource(svc)
+		if err != nil {
+			return r.StatusInternalServerError, err
+		}
+	}
+	//create replicationControllers, first query the svc is exsit or not, if not exsit, create it
 	rc := resouce.NewRC(app)
-
-	namespace, err := k8sClient.CoreV1().Namespaces().Create(ns)
-	if err != nil {
-		//TODO
-		log.Error(err)
+	if !resouce.ExsitResource(rc) {
+		err := resouce.CreateResource(rc)
+		if err != nil {
+			return r.StatusInternalServerError, err
+		}
 	}
-	log.Info(namespace)
-	service, err := k8sClient.CoreV1().Services(ns.Name).Create(svc)
-	if err != nil {
-		//TODO
-		log.Error(err)
-	}
-	log.Info(service)
-
-	replication, err := k8sClient.CoreV1().ReplicationControllers(ns.Name).Create(rc)
-	if err != nil {
-		//TODO
-		log.Error(err)
-	}
-	log.Info(replication)
 
 	//TODO 掉用k8s的pkg下的方法去获取svc ns rc的状态
 	//当ns，svc，rc都创建成功后，进行本地数据库的数据插入操作
-	return "", nil
-}
-
-func GetApplication(request *http.Request) (string, interface{}) {
-	//获取请求数据，解析成app对象
-	/*decoder := json.NewDecoder(request.Body)
-	app := &application.App{}
-	err := decoder.Decode(app)
-	if err != nil {
-		//TODO
-		log.Error(err)
-	}
-	ns := resouce.NewNS(app)
-	svc := resouce.NewSVC(app)
-	rc := resouce.NewRC(app)
-
-	namespace, err := k8sClient.CoreV1().Namespaces().Create(ns)
-	if err != nil {
-		//TODO
-		log.Error(err)
-	}
-	log.Info(namespace)
-	service, err := k8sClient.CoreV1().Services(ns.Name).Create(svc)
-	if err != nil {
-		//TODO
-		log.Error(err)
-	}
-	log.Info(service)
-
-	replication, err := k8sClient.CoreV1().ReplicationControllers(ns.Name).Create(rc)
-	if err != nil {
-		//TODO
-		log.Error(err)
-	}
-	log.Info(replication)
-
-	//TODO 掉用k8s的pkg下的方法去获取svc ns rc的状态
-	//当ns，svc，rc都创建成功后，进行本地数据库的数据插入操作
-	return "", nil*/
-	podlist, err := k8sClient.CoreV1().ReplicationControllers("default").List(v1.ListOptions{})
-	log.Info(podlist)
+	return r.StatusCreated, "create app successed"
 }

@@ -112,15 +112,10 @@ func dumpHttpRequest(r *http.Request) string {
 // response
 
 const httpJsonRespFmt = `{
-  "kind":"%s"
-  "apiVersion": "1.0",
-  "metadata": "%v",
-  "status": "%s",
-  "message": "%s",
-  "reason": "%s",
-  "details": "%v",
-  "code": "%s",
-  "items": %s
+  "api": "1.0",
+  "status": "%v",
+  "err": %v,
+  "msg": %v
 }
 `
 
