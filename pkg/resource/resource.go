@@ -41,7 +41,7 @@ func newOjectMeta(app *application.App) v1.ObjectMeta {
 	}
 }
 
-func NewPodSpec(app *application.App) v1.PodSpec {
+func newPodSpec(app *application.App) v1.PodSpec {
 	var containerPorts []v1.ContainerPort
 	if app.Ports != nil {
 		for _, port := range app.Ports {
@@ -52,6 +52,8 @@ func NewPodSpec(app *application.App) v1.PodSpec {
 			})
 		}
 	}
+
+	log.Debugf("memory=%#v", resource.MustParse(app.Cpu))
 
 	return v1.PodSpec{
 		RestartPolicy: v1.RestartPolicyAlways,
@@ -88,13 +90,13 @@ func NewPodSpec(app *application.App) v1.PodSpec {
 func newPodTemplateSpec(app *application.App) *v1.PodTemplateSpec {
 	return &v1.PodTemplateSpec{
 		ObjectMeta: newOjectMeta(app),
-		Spec:       NewPodSpec(app),
+		Spec:       newPodSpec(app),
 	}
 }
 
 func newReplicationControllerepec(app *application.App) v1.ReplicationControllerSpec {
 	return v1.ReplicationControllerSpec{
-		Replicas: parseUtil.Int32ToPointer(int32(app.InstanceCount)),
+		Replicas: parseUtil.IntToInt32Pointer(app.InstanceCount),
 		Selector: map[string]string{"name": app.Name},
 		Template: newPodTemplateSpec(app),
 	}
@@ -157,27 +159,34 @@ func CreateResource(param interface{}) error {
 	switch param.(type) {
 	case *v1.Namespace:
 		ns := param.(*v1.Namespace)
-		_, err := client.K8sClient.CoreV1().Namespaces().Create(ns)
+		_, err := client.K8sClient.
+			CoreV1().
+			Namespaces().
+			Create(ns)
 		if err != nil {
 			log.Errorf("create namespace [%v] err:%v", ns.Name, err)
 			return err
 		}
 		log.Noticef("namespace [%v] is created]", ns.Name)
 		return nil
-
 	case *v1.Service:
 		svc := param.(*v1.Service)
-		_, err := client.K8sClient.CoreV1().Services(svc.Namespace).Create(svc)
+		_, err := client.K8sClient.
+			CoreV1().
+			Services(svc.Namespace).
+			Create(svc)
 		if err != nil {
 			log.Errorf("create service [%v] err:%v", svc.Name, err)
 			return err
 		}
 		log.Noticef("service [%v] is created]", svc.Name)
 		return nil
-
 	case *v1.ReplicationController:
 		rc := param.(*v1.ReplicationController)
-		_, err := client.K8sClient.CoreV1().ReplicationControllers(rc.Namespace).Create(rc)
+		_, err := client.K8sClient.
+			CoreV1().
+			ReplicationControllers(rc.Namespace).
+			Create(rc)
 		if err != nil {
 			log.Errorf("create replicationControllers [%v] err:%v", rc.Name, err)
 			return err
@@ -185,36 +194,84 @@ func CreateResource(param interface{}) error {
 		log.Noticef("replication [%v] is created]", rc.Name)
 		return nil
 	}
-
 	return nil
 }
 
-//ExsitResource decide namesapce,service,replicationController exsit or not by name
+//ExsitResource decide namesapce,service,replicationController exsit or not by name;false is not exsit,true exsit
 func ExsitResource(param interface{}) bool {
 	switch param.(type) {
 	case *v1.Namespace:
-		_, err := client.K8sClient.CoreV1().Namespaces().Get(param.(*v1.Namespace).Name, metav1.GetOptions{})
+		_, err := client.K8sClient.
+			CoreV1().
+			Namespaces().
+			Get(param.(*v1.Namespace).Name, metav1.GetOptions{})
 		if err != nil {
 			return false
 		}
 		return true
-
 	case *v1.Service:
 		svc := param.(*v1.Service)
-		_, err := client.K8sClient.CoreV1().Services(svc.Namespace).Get(svc.Name, metav1.GetOptions{})
+		_, err := client.K8sClient.
+			CoreV1().
+			Services(svc.Namespace).
+			Get(svc.Name, metav1.GetOptions{})
 		if err != nil {
 			return false
 		}
 		return true
-
 	case *v1.ReplicationController:
 		rc := param.(*v1.ReplicationController)
-		_, err := client.K8sClient.CoreV1().ReplicationControllers(rc.Namespace).Get(rc.Name, metav1.GetOptions{})
+		_, err := client.K8sClient.
+			CoreV1().
+			ReplicationControllers(rc.Namespace).
+			Get(rc.Name, metav1.GetOptions{})
 		if err != nil {
 			return false
 		}
 		return true
 	}
-
 	return false
+}
+
+//DeleteResource delete namespace,service,replicationController
+func DeleteResource(param interface{}) error {
+	switch param.(type) {
+	case *v1.Namespace:
+		ns := param.(*v1.Namespace)
+		err := client.K8sClient.
+			CoreV1().
+			Namespaces().
+			Delete(ns.Name, &v1.DeleteOptions{TypeMeta: newTypeMeta("Namespace", "v1"), GracePeriodSeconds: parseUtil.IntToInt64Pointer(30)})
+		if err != nil {
+			log.Errorf("delete namespace [%v] err:%v", ns.Name, err)
+			return err
+		}
+		log.Noticef("namespace [%v] was deleted", ns.Name)
+		return nil
+	case *v1.Service:
+		svc := param.(*v1.Service)
+		err := client.K8sClient.
+			CoreV1().
+			Services(svc.Namespace).
+			Delete(svc.Name, &v1.DeleteOptions{TypeMeta: newTypeMeta("Namespace", "v1"), GracePeriodSeconds: parseUtil.IntToInt64Pointer(30)})
+		if err != nil {
+			log.Errorf("delete service [%v] err:%v", svc.Name, err)
+			return err
+		}
+		log.Noticef("service [%v] was deleted]", svc.Name)
+		return nil
+	case *v1.ReplicationController:
+		rc := param.(*v1.ReplicationController)
+		err := client.K8sClient.
+			CoreV1().
+			ReplicationControllers(rc.Namespace).
+			Delete(rc.Name, &v1.DeleteOptions{TypeMeta: newTypeMeta("ReplicationControllers", "v1"), GracePeriodSeconds: parseUtil.IntToInt64Pointer(30)})
+		if err != nil {
+			log.Errorf("delete replicationControllers [%v] err:%v", rc.Name, err)
+			return err
+		}
+		log.Noticef("replication [%v] is created]", rc.Name)
+		return nil
+	}
+	return nil
 }

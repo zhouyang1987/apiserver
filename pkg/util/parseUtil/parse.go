@@ -14,9 +14,15 @@
 
 package parseUtil
 
-func Int32ToPointer(input int32) *int32 {
+func IntToInt32Pointer(input int) *int32 {
 	tmp := new(int32)
-	*tmp = input
+	*tmp = int32(input)
+	return tmp
+}
+
+func IntToInt64Pointer(input int) *int64 {
+	tmp := new(int64)
+	*tmp = int64(input)
 	return tmp
 }
 
