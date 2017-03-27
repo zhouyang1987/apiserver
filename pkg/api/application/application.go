@@ -79,7 +79,7 @@ type App struct {
 	Region        string            `json:"region" xorm:"varchar(256)"`
 	Memory        string            `json:"memory" xorm:"varchar(11)"`
 	Cpu           string            `json:"cpu" xorm:"varchar(11)"`
-	InstanceCount int32             `json:"instanceCount" xorm:"int(11)"`
+	InstanceCount int               `json:"instanceCount" xorm:"int(11)"`
 	Envs          map[string]string `json:"envs" xorm:"varchar(1024)"`
 	Ports         []Port            `json:"ports" xorm:"varchar(1024)"`
 	Image         string            `json:"image" xorm:""`

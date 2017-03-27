@@ -147,7 +147,7 @@ func writeHttpResp(w http.ResponseWriter, dump string, status string, body inter
 
 	// error
 	if status != StatusOK && status != StatusCreated && status != StatusNoContent {
-		errStr = `"` + string(res) + `"`
+		errStr = string(res)
 		log.Debug(dump, status, errStr, data, sub)
 		fmt.Fprintf(w, httpJsonRespFmt, status, errStr, data)
 		return
