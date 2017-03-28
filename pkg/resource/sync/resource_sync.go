@@ -7,9 +7,7 @@ import (
 
 	"apiserver/pkg/client"
 	"apiserver/pkg/util/log"
-	"apiserver/pkg/util/parseUtil"
 
-	// "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -40,7 +38,7 @@ func ListResource() {
 	nsList, err := client.K8sClient.
 		CoreV1().
 		Namespaces().
-		List(v1.ListOptions{Watch: true, TimeoutSeconds: parseUtil.IntToInt64Pointer(LIST_WATCH_PERIOD)})
+		List(v1.ListOptions{})
 	if err != nil {
 		log.Errorf("list and watch k8s's namespace err: %v", err)
 	} else {
@@ -50,8 +48,8 @@ func ListResource() {
 	for _, v := range ListNameSpace {
 		svcList, err := client.K8sClient.
 			CoreV1().
-			Services(v.Name).
-			List(v1.ListOptions{Watch: true, TimeoutSeconds: parseUtil.IntToInt64Pointer(LIST_WATCH_PERIOD)})
+			Services(v.ObjectMeta.Name).
+			List(v1.ListOptions{})
 		if err != nil {
 			log.Errorf("list and watch k8s's service of namespace [%v] err: %v", v.Name, err)
 		} else {
@@ -62,8 +60,8 @@ func ListResource() {
 	for _, v := range ListNameSpace {
 		rcList, err := client.K8sClient.
 			CoreV1().
-			ReplicationControllers(v.Name).
-			List(v1.ListOptions{Watch: true, TimeoutSeconds: parseUtil.IntToInt64Pointer(LIST_WATCH_PERIOD)})
+			ReplicationControllers(v.ObjectMeta.Name).
+			List(v1.ListOptions{})
 		if err != nil {
 			log.Errorf("list and watch k8s's service of namespace [%v] err: %v", v.Name, err)
 		} else {
@@ -77,15 +75,15 @@ func loop(param interface{}) {
 	switch param.(type) {
 	case *v1.NamespaceList:
 		for _, ns := range param.(*v1.NamespaceList).Items {
-			ListNameSpace[""] = ns
+			ListNameSpace[ns.ObjectMeta.Name] = ns
 		}
 	case *v1.ServiceList:
 		for _, svc := range param.(*v1.ServiceList).Items {
-			ListService[""] = svc
+			ListService[svc.ObjectMeta.Name] = svc
 		}
 	case *v1.ReplicationControllerList:
 		for _, rc := range param.(*v1.ReplicationControllerList).Items {
-			ListReplicationController[""] = rc
+			ListReplicationController[rc.ObjectMeta.Name] = rc
 		}
 	}
 }
