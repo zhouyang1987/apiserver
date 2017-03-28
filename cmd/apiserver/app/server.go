@@ -21,6 +21,7 @@ import (
 	a "apiserver/pkg/apis/app"
 	"apiserver/pkg/componentconfig"
 	"apiserver/pkg/configz"
+	"apiserver/pkg/resource/sync"
 	"apiserver/pkg/util/log"
 
 	"github.com/gorilla/mux"
@@ -55,6 +56,7 @@ func Run(server *Apiserver) error {
 	installApiGroup(api)
 	http.Handle("/", root)
 	log.Infof("starting apiserver and listen on : %v", fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort))
+	go sync.Sync()
 	return http.ListenAndServe(fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort), nil)
 }
 

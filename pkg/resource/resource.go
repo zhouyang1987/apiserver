@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package resouce
+package resource
 
 import (
 	"apiserver/pkg/api/application"
@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/pkg/util/intstr"
 )
 
+//newTypeMeta create k8s's TypeMeta
 func newTypeMeta(kind, vereion string) metav1.TypeMeta {
 	return metav1.TypeMeta{
 		Kind:       kind,
@@ -33,14 +34,16 @@ func newTypeMeta(kind, vereion string) metav1.TypeMeta {
 	}
 }
 
+//newOjectMeta create k8s's ObjectMeta
 func newOjectMeta(app *application.App) v1.ObjectMeta {
 	return v1.ObjectMeta{
-		Name:      app.UserName,
+		Name:      app.Name,
 		Namespace: app.UserName,
 		Labels:    map[string]string{"name": app.Name},
 	}
 }
 
+//newPodSpec create k8s's PodSpec
 func newPodSpec(app *application.App) v1.PodSpec {
 	var containerPorts []v1.ContainerPort
 	if app.Ports != nil {
@@ -87,6 +90,7 @@ func newPodSpec(app *application.App) v1.PodSpec {
 	}
 }
 
+//newPodTemplateSpec create k8s's PodTemplateSpec
 func newPodTemplateSpec(app *application.App) *v1.PodTemplateSpec {
 	return &v1.PodTemplateSpec{
 		ObjectMeta: newOjectMeta(app),
@@ -94,6 +98,7 @@ func newPodTemplateSpec(app *application.App) *v1.PodTemplateSpec {
 	}
 }
 
+//newReplicationControllerepec create k8s's  ReplicationControllerSpec
 func newReplicationControllerepec(app *application.App) v1.ReplicationControllerSpec {
 	return v1.ReplicationControllerSpec{
 		Replicas: parseUtil.IntToInt32Pointer(app.InstanceCount),
@@ -102,6 +107,7 @@ func newReplicationControllerepec(app *application.App) v1.ReplicationController
 	}
 }
 
+//newServiceSpec create k8s's ServiceSpec
 func newServiceSpec(app *application.App) v1.ServiceSpec {
 	/*	var svcPorts []v1.ServicePort
 		for _, port := range app.Ports {
@@ -125,11 +131,14 @@ func newServiceSpec(app *application.App) v1.ServiceSpec {
 	}
 }
 
+//newNamespaceSpec create k8s's NamespaceSpec
 func newNamespaceSpec(app *application.App) v1.NamespaceSpec {
 	return v1.NamespaceSpec{
 		Finalizers: []v1.FinalizerName{v1.FinalizerKubernetes},
 	}
 }
+
+//NewSVC create k8s's resource Service
 func NewSVC(app *application.App) *v1.Service {
 	return &v1.Service{
 		TypeMeta:   newTypeMeta("Service", "v1"),
@@ -138,6 +147,7 @@ func NewSVC(app *application.App) *v1.Service {
 	}
 }
 
+//NewRC create k8s's resource ReplicationController
 func NewRC(app *application.App) *v1.ReplicationController {
 	return &v1.ReplicationController{
 		TypeMeta:   newTypeMeta("ReplicationController", "v1"),
@@ -146,10 +156,14 @@ func NewRC(app *application.App) *v1.ReplicationController {
 	}
 }
 
+//NewNS create k8s's resource Namespace
 func NewNS(app *application.App) *v1.Namespace {
+	temApp := new(application.App)
+	temApp.Name = app.UserName
+	temApp.UserName = app.UserName
 	return &v1.Namespace{
 		TypeMeta:   newTypeMeta("Namespace", "v1"),
-		ObjectMeta: newOjectMeta(app),
+		ObjectMeta: newOjectMeta(temApp),
 		Spec:       newNamespaceSpec(app),
 	}
 }
@@ -253,7 +267,7 @@ func DeleteResource(param interface{}) error {
 		err := client.K8sClient.
 			CoreV1().
 			Services(svc.Namespace).
-			Delete(svc.Name, &v1.DeleteOptions{TypeMeta: newTypeMeta("Namespace", "v1"), GracePeriodSeconds: parseUtil.IntToInt64Pointer(30)})
+			Delete(svc.Name, &v1.DeleteOptions{})
 		if err != nil {
 			log.Errorf("delete service [%v] err:%v", svc.Name, err)
 			return err
@@ -265,7 +279,7 @@ func DeleteResource(param interface{}) error {
 		err := client.K8sClient.
 			CoreV1().
 			ReplicationControllers(rc.Namespace).
-			Delete(rc.Name, &v1.DeleteOptions{TypeMeta: newTypeMeta("ReplicationControllers", "v1"), GracePeriodSeconds: parseUtil.IntToInt64Pointer(30)})
+			Delete(rc.Name, &v1.DeleteOptions{})
 		if err != nil {
 			log.Errorf("delete replicationControllers [%v] err:%v", rc.Name, err)
 			return err
@@ -274,4 +288,39 @@ func DeleteResource(param interface{}) error {
 		return nil
 	}
 	return nil
+}
+
+func WatchPodStatus(app *application.App) {
+	watcher, err := client.K8sClient.CoreV1().Pods(app.UserName).Watch(v1.ListOptions{})
+	if err != nil {
+		log.Errorf("watch the pod of replicationController named %s err:%v", app.Name, err)
+	} else {
+		eventChan := watcher.ResultChan()
+		for {
+			select {
+			case event := <-eventChan:
+				log.Debugf("event ==== %#v", event.Object.(*v1.Pod).Status.Phase)
+				if event.Object.(*v1.Pod).Status.Phase == v1.PodRunning {
+					app.Status = application.AppRunning
+				}
+				if event.Object.(*v1.Pod).Status.Phase == v1.PodSucceeded {
+					app.Status = application.AppSuccessed
+				}
+				if event.Object.(*v1.Pod).Status.Phase == v1.PodPending {
+					app.Status = application.AppBuilding
+				}
+				if event.Object.(*v1.Pod).Status.Phase == v1.PodFailed {
+					app.Status = application.AppFailed
+				}
+				if event.Object.(*v1.Pod).Status.Phase == v1.PodUnknown {
+					app.Status = application.AppUnknow
+				}
+				if err := app.Update(); err != nil {
+					log.Errorf("update application's status to %s err:%v", application.Status[app.Status], err)
+					continue
+				}
+			}
+		}
+	}
+
 }

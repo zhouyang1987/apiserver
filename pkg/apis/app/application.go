@@ -20,6 +20,7 @@ import (
 
 	"apiserver/pkg/api/application"
 	"apiserver/pkg/resource"
+	"apiserver/pkg/resource/sync"
 	r "apiserver/pkg/router"
 	"apiserver/pkg/util/log"
 
@@ -28,6 +29,7 @@ import (
 
 func Register(rout *mux.Router) {
 	r.RegisterHttpHandler(rout, "/app", "POST", CreateApplication)
+	r.RegisterHttpHandler(rout, "/app", "DELETE", DeleteApplication)
 }
 
 func CreateApplication(request *http.Request) (string, interface{}) {
@@ -39,20 +41,23 @@ func CreateApplication(request *http.Request) (string, interface{}) {
 		log.Errorf("decode the request body err:%v", err)
 		return r.StatusBadRequest, "json format error"
 	}
+	if err = app.Insert(); err != nil {
+		return r.StatusInternalServerError, "access database err:" + err.Error()
+	}
 
 	//create namespace, first query the ns is exsit or not, if not exsit, create it
-	ns := resouce.NewNS(app)
-	if !resouce.ExsitResource(ns) {
-		err := resouce.CreateResource(ns)
+	ns := resource.NewNS(app)
+	if !resource.ExsitResource(ns) {
+		err := resource.CreateResource(ns)
 		if err != nil {
 			return r.StatusInternalServerError, err
 		}
 	}
 
 	//create service, first query the svc is exsit or not, if not exsit, create it
-	svc := resouce.NewSVC(app)
-	if !resouce.ExsitResource(svc) { //if service not exsit,then create service
-		err := resouce.CreateResource(svc)
+	svc := resource.NewSVC(app)
+	if !resource.ExsitResource(svc) { //if service not exsit,then create service
+		err := resource.CreateResource(svc)
 		if err != nil {
 			return r.StatusInternalServerError, err
 		}
@@ -62,9 +67,9 @@ func CreateApplication(request *http.Request) (string, interface{}) {
 	}
 
 	//create replicationControllers, first query the svc is exsit or not, if not exsit, create it
-	rc := resouce.NewRC(app)
-	if !resouce.ExsitResource(rc) {
-		err := resouce.CreateResource(rc)
+	rc := resource.NewRC(app)
+	if !resource.ExsitResource(rc) {
+		err := resource.CreateResource(rc)
 		if err != nil {
 			return r.StatusInternalServerError, err
 		}
@@ -72,18 +77,27 @@ func CreateApplication(request *http.Request) (string, interface{}) {
 		return r.StatusForbidden, "the application of named " + app.Name + " is already exsit"
 	}
 
+	go resource.WatchPodStatus(app)
 	//TODO 掉用k8s的pkg下的方法去获取svc ns rc的状态
 	//当ns，svc，rc都创建成功后，进行本地数据库的数据插入操作
 	return r.StatusCreated, "create app successed"
 }
 
 func DeleteApplication(request *http.Request) (string, interface{}) {
-	// request.FormValue("id")
-	decoder := json.NewDecoder(request.Body)
-	app := &application.App{}
-	err := decoder.Decode(app)
-	if err != nil {
-		log.Errorf("decode the request body err:%v", err)
-		return r.StatusBadRequest, "json format error"
+	appName := request.FormValue("app_name")
+	log.Debugf("appname=%s", appName)
+	svc := sync.ListService[appName]
+	if err := resource.DeleteResource(&svc); err != nil {
+		return r.StatusInternalServerError, "delete application err: " + err.Error()
 	}
+	rc := sync.ListReplicationController[appName]
+	if err := resource.DeleteResource(&rc); err != nil {
+		return r.StatusInternalServerError, "delete application err: " + err.Error()
+	}
+	app := &application.App{Name: appName, Status: 5}
+	if err := app.Update(); err != nil {
+		return r.StatusInternalServerError, "the application is delete,but update the application's status err: " + err.Error()
+	}
+	go resource.WatchPodStatus(app)
+	return r.StatusNoContent, "delete app successed"
 }
