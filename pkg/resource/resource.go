@@ -324,3 +324,45 @@ func WatchPodStatus(app *application.App) {
 	}
 
 }
+
+func UpdateResouce(param interface{}) error {
+	switch param.(type) {
+	case *v1.Namespace:
+		ns := param.(*v1.Namespace)
+		_, err := client.K8sClient.
+			CoreV1().
+			Namespaces().
+			Update(ns)
+		if err != nil {
+			log.Errorf("update namespace [%v] err:%v", ns.Name, err)
+			return err
+		}
+		log.Noticef("namespace [%v] was updated", ns.Name)
+		return nil
+	case *v1.Service:
+		svc := param.(*v1.Service)
+		_, err := client.K8sClient.
+			CoreV1().
+			Services(svc.Namespace).
+			Update(svc)
+		if err != nil {
+			log.Errorf("update service [%v] err:%v", svc.Name, err)
+			return err
+		}
+		log.Noticef("service [%v] was updated]", svc.Name)
+		return nil
+	case *v1.ReplicationController:
+		rc := param.(*v1.ReplicationController)
+		_, err := client.K8sClient.
+			CoreV1().
+			ReplicationControllers(rc.Namespace).
+			Update(rc)
+		if err != nil {
+			log.Errorf("update replicationControllers [%v] err:%v", rc.Name, err)
+			return err
+		}
+		log.Noticef("replication [%v] is updated]", rc.Name)
+		return nil
+	}
+	return nil
+}
