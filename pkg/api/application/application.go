@@ -111,11 +111,7 @@ func init() {
 }
 
 func (app *App) String() string {
-	appStr, err := jsonx.ToJson(app)
-	if err != nil {
-		log.Errorf("node to string err :%s", err.Error())
-		return ""
-	}
+	appStr := jsonx.ToJson(app)
 	return appStr
 }
 

@@ -17,6 +17,7 @@ package resource
 import (
 	"apiserver/pkg/api/application"
 	"apiserver/pkg/client"
+	"apiserver/pkg/util/jsonx"
 	"apiserver/pkg/util/log"
 	"apiserver/pkg/util/parseUtil"
 
@@ -55,9 +56,6 @@ func newPodSpec(app *application.App) v1.PodSpec {
 			})
 		}
 	}
-
-	log.Debugf("memory=%#v", resource.MustParse(app.Cpu))
-
 	return v1.PodSpec{
 		RestartPolicy: v1.RestartPolicyAlways,
 		Containers: []v1.Container{
@@ -279,12 +277,22 @@ func DeleteResource(param interface{}) error {
 		err := client.K8sClient.
 			CoreV1().
 			ReplicationControllers(rc.Namespace).
-			Delete(rc.Name, &v1.DeleteOptions{})
+			Delete(rc.Name, &v1.DeleteOptions{TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "ReplicationController"}, OrphanDependents: parseUtil.BoolToPointer(false)})
 		if err != nil {
 			log.Errorf("delete replicationControllers [%v] err:%v", rc.Name, err)
 			return err
 		}
-		log.Noticef("replication [%v] is created]", rc.Name)
+		log.Noticef("replication [%v] is delete]", rc.Name)
+		list, err := client.K8sClient.CoreV1().Pods(rc.Namespace).List(v1.ListOptions{LabelSelector: "name"})
+		if err != nil {
+			log.Errorf("delete rc's pod  err:%v", err)
+			return err
+		}
+		for i := 0; i < len(list.Items); i++ {
+			log.Errorf(" rc's pod  err:%v", jsonx.ToJson(list.Items))
+			err := client.K8sClient.CoreV1().Pods(rc.Namespace).Delete(list.Items[i].ObjectMeta.Name, &v1.DeleteOptions{})
+			return err
+		}
 		return nil
 	}
 	return nil
@@ -299,7 +307,6 @@ func WatchPodStatus(app *application.App) {
 		for {
 			select {
 			case event := <-eventChan:
-				log.Debugf("event ==== %#v", event.Object.(*v1.Pod).Status.Phase)
 				if event.Object.(*v1.Pod).Status.Phase == v1.PodRunning {
 					app.Status = application.AppRunning
 				}
@@ -317,6 +324,9 @@ func WatchPodStatus(app *application.App) {
 				}
 				if err := app.Update(); err != nil {
 					log.Errorf("update application's status to %s err:%v", application.Status[app.Status], err)
+					if app.Status == application.AppRunning {
+						break
+					}
 					continue
 				}
 			}
