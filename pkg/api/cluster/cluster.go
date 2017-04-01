@@ -1,5 +1,4 @@
 package cluster
 
-type Cluster struct{
-	
+type Cluster struct {
 }
