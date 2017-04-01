@@ -191,17 +191,16 @@ Method: POST
 - JSON
 ```text
 {
-  "name": "test-web",
-  "region": "",
-  "memory": "512m",
-  "cpu": "512mi",
-  "instanceCount": 2,
-  "envs": [],
-  "ports": [],
-  "image": "",
-  "userName": "",
-  "remark": ""
+  "name": "test",
+  "region": "north",
+  "memory": "128Mi",
+  "cpu": "128m",
+  "instanceCount": 1,
+  "image": "index.tenxcloud.com/carrotzpc/docker-2048:latest",
+  "userName": "huangjia",
+  "remark": "this is a test web application"
 }
+
 ```
 - 说明:
 
@@ -212,10 +211,10 @@ Method: POST
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 201,
-  "err": 0,
-  "msg": "create app successed",
+  "api": "1.0",
+  "status": "201",
+  "err": "OK",
+  "msg": "create app successed"
 }
 ```
 
@@ -233,8 +232,8 @@ Method: UPDATE
 
 ```text
 {
-	"id":1,
-	"userName":"test"
+  "app_name":"test",
+  "ns":"huangjia"
 }
 ```
 - 说明：
@@ -247,10 +246,10 @@ Method: UPDATE
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 201,
-  "err": 0,
-  "msg": "start app successed",
+  "api": "1.0",
+  "status": "200",
+  "err": "OK",
+  "msg": "start application named test successed"
 }
 ```
 
@@ -260,7 +259,7 @@ Method: UPDATE
 
 URI: ApiURI/app
 
-Method: GET
+Method: PATCH
 
 **请求**
 
@@ -268,7 +267,8 @@ Method: GET
 
 ```text
 {
-	"id":1
+	"app_name":"test",
+  "ns":"huangjia"
 }
 ```
 
@@ -279,10 +279,10 @@ Method: GET
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 201,
-  "err": 0,
-  "msg": "stop app successed",
+  "api": "1.0",
+  "status": "200",
+  "err": "OK",
+  "msg": "stop application named test successed"
 }
 ```
 
@@ -298,7 +298,8 @@ Method: GET
 
 ```text
 {
-	"id":1
+  "app_name":"test",
+  "ns":"huangjia"
 }
 ```
 

@@ -9,6 +9,7 @@ import (
 	// "apiserver/pkg/util/jsonx"
 	"apiserver/pkg/util/log"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -29,9 +30,9 @@ func Sync() {
 	for {
 		select {
 		case <-ticker.C:
-			// log.Debugf("ListNameSpace ==== %v", jsonx.ToJson(ListNameSpace))
-			// log.Debugf("ListService ==== %v", jsonx.ToJson(ListService))
-			// log.Debugf("ListReplicationController ==== %v", jsonx.ToJson(ListReplicationController))
+			/*	log.Debugf("ListNameSpace ==== %v", jsonx.ToJson(ListNameSpace))
+				log.Debugf("ListService ==== %v", jsonx.ToJson(ListService))
+				log.Debugf("ListReplicationController ==== %v", jsonx.ToJson(ListReplicationController))*/
 			go ListResource()
 		}
 	}
@@ -42,7 +43,7 @@ func ListResource() {
 	nsList, err := client.K8sClient.
 		CoreV1().
 		Namespaces().
-		List(v1.ListOptions{})
+		List(metav1.ListOptions{})
 	if err != nil {
 		log.Errorf("list and watch k8s's namespace err: %v", err)
 	} else {
@@ -54,7 +55,7 @@ func ListResource() {
 		svcList, err := client.K8sClient.
 			CoreV1().
 			Services(v[k].ObjectMeta.Name).
-			List(v1.ListOptions{})
+			List(metav1.ListOptions{})
 		if err != nil {
 			log.Errorf("list and watch k8s's service of namespace [%v] err: %v", v[k].Name, err)
 		} else {
@@ -65,7 +66,7 @@ func ListResource() {
 		rcList, err := client.K8sClient.
 			CoreV1().
 			ReplicationControllers(v[k].ObjectMeta.Name).
-			List(v1.ListOptions{})
+			List(metav1.ListOptions{})
 		if err != nil {
 			log.Errorf("list and watch k8s's service of namespace [%v] err: %v", v[k].Name, err)
 		} else {

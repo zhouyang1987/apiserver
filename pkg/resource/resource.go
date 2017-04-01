@@ -17,14 +17,16 @@ package resource
 import (
 	"apiserver/pkg/api/application"
 	"apiserver/pkg/client"
-	"apiserver/pkg/util/jsonx"
+	// "apiserver/pkg/util/jsonx"
 	"apiserver/pkg/util/log"
 	"apiserver/pkg/util/parseUtil"
 
-	"k8s.io/client-go/pkg/api/resource"
+	// "k8s.io/client-go/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/pkg/api/v1"
-	metav1 "k8s.io/client-go/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/util/intstr"
+	// metav1 "k8s.io/client-go/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 //newTypeMeta create k8s's TypeMeta
@@ -36,8 +38,8 @@ func newTypeMeta(kind, vereion string) metav1.TypeMeta {
 }
 
 //newOjectMeta create k8s's ObjectMeta
-func newOjectMeta(app *application.App) v1.ObjectMeta {
-	return v1.ObjectMeta{
+func newOjectMeta(app *application.App) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
 		Name:      app.Name,
 		Namespace: app.UserName,
 		Labels:    map[string]string{"name": app.Name},
@@ -121,11 +123,13 @@ func newServiceSpec(app *application.App) v1.ServiceSpec {
 		Ports: []v1.ServicePort{
 			v1.ServicePort{
 				Name:       app.Name,
-				Port:       int32(800),
-				TargetPort: intstr.FromInt(8080),
-				Protocol:   v1.ProtocolTCP,
+				Port:       int32(9090),
+				TargetPort: intstr.FromInt(80),
+				// NodePort:   int32(30010),
+				Protocol: v1.ProtocolTCP,
 			},
 		},
+		// Type: v1.ServiceTypeNodePort,
 	}
 }
 
@@ -253,7 +257,7 @@ func DeleteResource(param interface{}) error {
 		err := client.K8sClient.
 			CoreV1().
 			Namespaces().
-			Delete(ns.Name, &v1.DeleteOptions{TypeMeta: newTypeMeta("Namespace", "v1"), GracePeriodSeconds: parseUtil.IntToInt64Pointer(30)})
+			Delete(ns.Name, &metav1.DeleteOptions{TypeMeta: newTypeMeta("Namespace", "v1"), GracePeriodSeconds: parseUtil.IntToInt64Pointer(30)})
 		if err != nil {
 			log.Errorf("delete namespace [%v] err:%v", ns.Name, err)
 			return err
@@ -265,7 +269,7 @@ func DeleteResource(param interface{}) error {
 		err := client.K8sClient.
 			CoreV1().
 			Services(svc.Namespace).
-			Delete(svc.Name, &v1.DeleteOptions{})
+			Delete(svc.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			log.Errorf("delete service [%v] err:%v", svc.Name, err)
 			return err
@@ -277,29 +281,31 @@ func DeleteResource(param interface{}) error {
 		err := client.K8sClient.
 			CoreV1().
 			ReplicationControllers(rc.Namespace).
-			Delete(rc.Name, &v1.DeleteOptions{TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "ReplicationController"}, OrphanDependents: parseUtil.BoolToPointer(false)})
+			Delete(rc.Name, &metav1.DeleteOptions{TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "ReplicationController"}, OrphanDependents: parseUtil.BoolToPointer(false)})
 		if err != nil {
 			log.Errorf("delete replicationControllers [%v] err:%v", rc.Name, err)
 			return err
 		}
 		log.Noticef("replication [%v] is delete]", rc.Name)
-		list, err := client.K8sClient.CoreV1().Pods(rc.Namespace).List(v1.ListOptions{LabelSelector: "name"})
+		//why annotation this code？ when l was use kubernetes 1.3.6，delete rc，the rc was deleted，but the rc's pods
+		//util exsit forever,so l have to delete the rc's pod. but kubernets 1.5 ,no this problem
+		/*list, err := client.K8sClient.CoreV1().Pods(rc.Namespace).List(metav1.ListOptions{LabelSelector: "name"})
 		if err != nil {
 			log.Errorf("delete rc's pod  err:%v", err)
 			return err
 		}
 		for i := 0; i < len(list.Items); i++ {
 			log.Errorf(" rc's pod  err:%v", jsonx.ToJson(list.Items))
-			err := client.K8sClient.CoreV1().Pods(rc.Namespace).Delete(list.Items[i].ObjectMeta.Name, &v1.DeleteOptions{})
+			err := client.K8sClient.CoreV1().Pods(rc.Namespace).Delete(list.Items[i].ObjectMeta.Name, &metav1.DeleteOptions{})
 			return err
-		}
+		}*/
 		return nil
 	}
 	return nil
 }
 
 func WatchPodStatus(app *application.App) {
-	watcher, err := client.K8sClient.CoreV1().Pods(app.UserName).Watch(v1.ListOptions{})
+	watcher, err := client.K8sClient.CoreV1().Pods(app.UserName).Watch(metav1.ListOptions{})
 	if err != nil {
 		log.Errorf("watch the pod of replicationController named %s err:%v", app.Name, err)
 	} else {
