@@ -12,17 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package httpx
+package client
 
 import (
-	"encoding/json"
 	"net/http"
+
+	"apiserver/pkg/configz"
+	"apiserver/pkg/util/log"
+
+	"github.com/docker/docker/client"
 )
 
-func FormValue(request *http.Request) (param map[string]string, err error) {
-	decode := json.NewDecoder(request.Body)
-	if err := decode.Decode(&param); err != nil {
-		return nil, err
+var (
+	DockerClient *client.Client
+)
+
+func init() {
+	host := configz.GetString("build", "endpoint", "127.0.0.1：2375")
+	version := configz.GetString("build", "version", "12.4")
+	cl := &http.Client{}
+	DockerClient, err = client.NewClient(host, version, cl, nil)
+	if err != nil {
+		log.Fatalf("init docker client err: %v", err)
 	}
-	return param, nil
 }

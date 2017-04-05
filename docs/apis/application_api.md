@@ -23,6 +23,8 @@
   - [灰度升级](#10.7)
   - [重新部署](#10.8)
   - [动态扩容](#10.9)
+* **[docker-build组件模块](#11)**
+  - [ 构建应用](#11.1)
 
 # <span id="2">协议</span>
 
@@ -133,7 +135,7 @@
 
 查询应用。
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
 Method: GET
 
@@ -181,13 +183,13 @@ Method: GET
 
 部署应用。
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
 Method: POST
 
 **请求**
 
-- ApiURI/app 
+- ApiURI/apps 
 - JSON
 ```text
 {
@@ -222,13 +224,13 @@ Method: POST
 
 上传文件。
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
-Method: UPDATE
+Method: PUT
 
 **请求**
 
-- ApiURI/app
+- ApiURI/apps
 
 ```text
 {
@@ -257,13 +259,13 @@ Method: UPDATE
 
 停止应用。
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
 Method: PATCH
 
 **请求**
 
-- ApiURI/app
+- ApiURI/apps
 
 ```text
 {
@@ -290,9 +292,9 @@ Method: PATCH
 
 删除应用。
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
-Method: GET
+Method: DELETE
 
 **请求**
 
@@ -310,10 +312,10 @@ Method: GET
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 201,
-  "err": 0,
-  "msg": "delete app successed",
+  "api": "1.0",
+  "status": "204",
+  "err": "OK",
+  "msg": "delete app successed"
 }
 ```
 
@@ -321,16 +323,17 @@ Method: GET
 
 弹性伸缩。
 
-URI: ApiURI/app
+URI: ApiURI/apps/scale
 
-Method: UPDATE
+Method: PATCH
 
 **请求**
 
 ```text
 {
-	"id":1,
-	"container_cnt":5
+  "app_name":"test",
+  "ns":"huangjia",
+  "app_cnt":3
 }
 ```
 
@@ -341,10 +344,10 @@ Method: UPDATE
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 201,
-  "err": 0,
-  "msg": "scale app successed",
+  "api": "1.0",
+  "status": "201",
+  "err": "OK",
+  "msg": "scale application named test successed"
 }
 ```
 
@@ -352,17 +355,17 @@ Method: UPDATE
 
 灰度升级。
 
-URI: ApiURI/app
+URI: ApiURI/apps/rollupdate
 
-Method: UPDATE
+Method: POST
 
 **请求**
 
 ```text
 {
-	"id":1,
-	"image":"regisrty/test-web:1.3",
-	"interval":60
+  "app_name":"test",
+  "ns":"huangjia",
+  "image":"index.tenxcloud.com/carrotzpc/docker-2048:20150730"
 }
 ```
 
@@ -373,27 +376,27 @@ Method: UPDATE
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 201,
-  "err": 0,
-  "msg": "rolling update app successed",
+  "api": "1.0",
+  "status": "201",
+  "err": "OK",
+  "msg": "rolling update application named test successed"
 }
 ```
 
 ### <span id="10.8">重新部署</span>
 
-灰度升级。
+重新部署。（该接口暂时还未提供）
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
 Method: UPDATE
 
 **请求**
 
 ```text
-{
-	"id":1
-}
+<!-- {
+  "id":1
+} -->
 ```
 
 **响应**
@@ -402,29 +405,31 @@ Method: UPDATE
 - JSON:
 
 ```text
-{
+<!-- {
   "apiversion": "alpha",
   "code": 201,
   "err": 0,
   "msg": "rolling update app successed",
-}
+} -->
 ```
 
 ### <span id="10.9">动态扩容</span>
 
 动态扩容。
 
-URI: ApiURI/app
+URI: ApiURI/apps/expansion
 
-Method: UPDATE
+Method: PUT
 
 **请求**
 
 ```text
+
 {
-	"id":1,
-	"cpu":"512m",
-	"memory":"512mi"
+  "app_name":"test",
+  "ns":"huangjia",
+	"cpu":"512Mi",
+	"memory":"512m"
 }
 ```
 
@@ -435,9 +440,103 @@ Method: UPDATE
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 201,
-  "err": 0,
-  "msg": "rolling update app successed",
+  "api": "1.0",
+  "status": "201",
+  "err": "OK",
+  "msg": "Expansion application named test successed"
+}
+```
+
+- docker-build组件api
+
+## <span id="11">docker-build组件模块</span>
+---
+
+### <span id="11.1">在线构建应用</span>
+
+查询应用。
+
+URI: ApiURI/builds
+
+Method: POST
+
+**请求**
+
+- JSON:
+
+```text
+ {
+    "app_name": "", 
+    "version": "", 
+    "remark": "", 
+    "registry": "", 
+    "repository": "", 
+    "branch": ""
+}
+
+```
+**参数说明**：
+- app_name：构建应用的名称，该名称会用作生成镜像名称,例如：my/xx/app_name:vaersion
+- version：构建应用的名称，该名称会用作生成镜像名称的tag,例如：my/xx/app_name:version
+- remark：构建应用的描述信息
+- registry： 应用上传的镜像仓库地址
+- repository：应用的项目代码地址
+- branch：应用的项目代码的分支
+
+**响应**
+
+- HTTP Status: 201;
+- JSON:
+
+```text
+{
+  "api": "1.0",
+  "status": "201",
+  "err": "OK",
+  "msg": "build application successed"
+}
+```
+
+### <span id="11.2">离线构建应用</span>
+
+查询应用。
+
+URI: ApiURI/builds
+
+Method: PUT
+
+**请求**
+
+- JSON:
+
+```text
+{
+    "app_name": "", 
+    "version": "", 
+    "remark": "", 
+    "registry": "",
+    "baseImage": "", 
+    "tarball": ""
+}
+
+**参数说明**：
+- app_name：构建应用的名称，该名称会用作生成镜像名称,例如：my/xx/app_name:vaersion
+- version：构建应用的名称，该名称会用作生成镜像名称的tag,例如：my/xx/app_name:version
+- remark：构建应用的描述信息
+- registry： 应用上传的镜像仓库地址
+- baseImage：构建应用的基础镜像
+- tarball：应用的压缩包文件
+
+**响应**
+
+- HTTP Status: 201;
+- JSON:
+
+```text
+{
+  "api": "1.0",
+  "status": "201",
+  "err": "OK",
+  "msg": "build application successed"
 }
 ```
