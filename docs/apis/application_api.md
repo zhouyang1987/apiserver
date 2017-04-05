@@ -23,6 +23,8 @@
   - [灰度升级](#10.7)
   - [重新部署](#10.8)
   - [动态扩容](#10.9)
+* **[docker-build组件模块](#11)**
+  - [ 构建应用](#11.1)
 
 # <span id="2">协议</span>
 
@@ -442,5 +444,99 @@ Method: PUT
   "status": "201",
   "err": "OK",
   "msg": "Expansion application named test successed"
+}
+```
+
+- docker-build组件api
+
+## <span id="11">docker-build组件模块</span>
+---
+
+### <span id="11.1">在线构建应用</span>
+
+查询应用。
+
+URI: ApiURI/builds
+
+Method: POST
+
+**请求**
+
+- JSON:
+
+```text
+ {
+    "app_name": "", 
+    "version": "", 
+    "remark": "", 
+    "registry": "", 
+    "repository": "", 
+    "branch": ""
+}
+
+```
+**参数说明**：
+- app_name：构建应用的名称，该名称会用作生成镜像名称,例如：my/xx/app_name:vaersion
+- version：构建应用的名称，该名称会用作生成镜像名称的tag,例如：my/xx/app_name:version
+- remark：构建应用的描述信息
+- registry： 应用上传的镜像仓库地址
+- repository：应用的项目代码地址
+- branch：应用的项目代码的分支
+
+**响应**
+
+- HTTP Status: 201;
+- JSON:
+
+```text
+{
+  "api": "1.0",
+  "status": "201",
+  "err": "OK",
+  "msg": "build application successed"
+}
+```
+
+### <span id="11.2">离线构建应用</span>
+
+查询应用。
+
+URI: ApiURI/builds
+
+Method: PUT
+
+**请求**
+
+- JSON:
+
+```text
+{
+    "app_name": "", 
+    "version": "", 
+    "remark": "", 
+    "registry": "",
+    "baseImage": "", 
+    "tarball": ""
+}
+
+**参数说明**：
+- app_name：构建应用的名称，该名称会用作生成镜像名称,例如：my/xx/app_name:vaersion
+- version：构建应用的名称，该名称会用作生成镜像名称的tag,例如：my/xx/app_name:version
+- remark：构建应用的描述信息
+- registry： 应用上传的镜像仓库地址
+- baseImage：构建应用的基础镜像
+- tarball：应用的压缩包文件
+
+**响应**
+
+- HTTP Status: 201;
+- JSON:
+
+```text
+{
+  "api": "1.0",
+  "status": "201",
+  "err": "OK",
+  "msg": "build application successed"
 }
 ```

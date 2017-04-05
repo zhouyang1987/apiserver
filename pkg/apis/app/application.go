@@ -17,7 +17,6 @@ package app
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"apiserver/pkg/api/application"
 	"apiserver/pkg/resource"
@@ -94,8 +93,15 @@ func CreateApplication(request *http.Request) (string, interface{}) {
 
 //DeleteApplication delete the application
 func DeleteApplication(request *http.Request) (string, interface{}) {
-	appName := request.FormValue("app_name")
-	namespace := request.FormValue("ns")
+	decoder := json.NewDecoder(request.Body)
+	app := &application.App{}
+	err := decoder.Decode(app)
+	if err != nil {
+		log.Errorf("decode the request body err:%v", err)
+		return r.StatusBadRequest, "json format error"
+	}
+	appName := app.Name
+	namespace := app.UserName
 	rc, exsit := sync.ListReplicationController[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
@@ -110,7 +116,6 @@ func DeleteApplication(request *http.Request) (string, interface{}) {
 	if err := resource.DeleteResource(&svc); err != nil {
 		return r.StatusInternalServerError, "delete application err: " + err.Error()
 	}
-	app := &application.App{Name: appName}
 	if err := app.Delete(); err != nil {
 		return r.StatusInternalServerError, "the application is delete,but update the application's status err: " + err.Error()
 	}
@@ -119,8 +124,15 @@ func DeleteApplication(request *http.Request) (string, interface{}) {
 
 //StopApplication stop the application
 func StopApplication(request *http.Request) (string, interface{}) {
-	appName := request.FormValue("app_name")
-	namespace := request.FormValue("ns")
+	decoder := json.NewDecoder(request.Body)
+	app := &application.App{}
+	err := decoder.Decode(app)
+	if err != nil {
+		log.Errorf("decode the request body err:%v", err)
+		return r.StatusBadRequest, "json format error"
+	}
+	appName := app.Name
+	namespace := app.UserName
 	rc, exsit := sync.ListReplicationController[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
@@ -129,7 +141,7 @@ func StopApplication(request *http.Request) (string, interface{}) {
 	if err := resource.UpdateResouce(&rc); err != nil {
 		return r.StatusInternalServerError, "stop application named " + appName + " failed"
 	}
-	app := &application.App{Name: appName, Status: application.AppStop}
+	app.Status = application.AppStop
 	if err := app.Update(); err != nil {
 		return r.StatusInternalServerError, "stop application named " + appName + " failed"
 	}
@@ -138,13 +150,19 @@ func StopApplication(request *http.Request) (string, interface{}) {
 
 //StartApplication start the application
 func StartApplication(request *http.Request) (string, interface{}) {
-	appName := request.FormValue("app_name")
-	namespace := request.FormValue("ns")
+	decoder := json.NewDecoder(request.Body)
+	app := &application.App{}
+	err := decoder.Decode(app)
+	if err != nil {
+		log.Errorf("decode the request body err:%v", err)
+		return r.StatusBadRequest, "json format error"
+	}
+	appName := app.Name
+	namespace := app.UserName
 	rc, exsit := sync.ListReplicationController[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
-	app := &application.App{Name: appName}
 	temApp, err := app.QueryOne()
 	if err != nil {
 		return r.StatusInternalServerError, "get application named " + appName + ` ` + err.Error()
@@ -163,19 +181,24 @@ func StartApplication(request *http.Request) (string, interface{}) {
 
 //ScaleApplication scale the application
 func ScaleApplication(request *http.Request) (string, interface{}) {
-	appName := request.FormValue("app_name")
-	app_cnt := request.FormValue("app_cnt")
-	namespace := request.FormValue("ns")
+	decoder := json.NewDecoder(request.Body)
+	app := &application.App{}
+	err := decoder.Decode(app)
+	if err != nil {
+		log.Errorf("decode the request body err:%v", err)
+		return r.StatusBadRequest, "json format error"
+	}
+	appName := app.Name
+	app_cnt := app.InstanceCount
+	namespace := app.UserName
 	rc, exsit := sync.ListReplicationController[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
-	cnt, _ := strconv.Atoi(app_cnt)
-	rc.Spec.Replicas = parseUtil.IntToInt32Pointer(cnt)
+	rc.Spec.Replicas = parseUtil.IntToInt32Pointer(app_cnt)
 	if err := resource.UpdateResouce(&rc); err != nil {
 		return r.StatusInternalServerError, "scale application named " + appName + ` failed`
 	}
-	app := &application.App{Name: appName, InstanceCount: cnt}
 	if err := app.Update(); err != nil {
 		return r.StatusInternalServerError, "update application named " + appName + ` failed`
 	}
@@ -184,9 +207,16 @@ func ScaleApplication(request *http.Request) (string, interface{}) {
 
 //RollingUpdateApplication rolling update the application
 func RollingUpdateApplication(request *http.Request) (string, interface{}) {
-	appName := request.FormValue("app_name")
-	namespace := request.FormValue("ns")
-	image := request.FormValue("image")
+	decoder := json.NewDecoder(request.Body)
+	app := &application.App{}
+	err := decoder.Decode(app)
+	if err != nil {
+		log.Errorf("decode the request body err:%v", err)
+		return r.StatusBadRequest, "json format error"
+	}
+	appName := app.Name
+	namespace := app.UserName
+	image := app.Image
 	// period := request.FormValue("period")
 	rc, exsit := sync.ListReplicationController[namespace][appName]
 	if !exsit {
@@ -196,7 +226,6 @@ func RollingUpdateApplication(request *http.Request) (string, interface{}) {
 	if err := resource.UpdateResouce(&rc); err != nil {
 		return r.StatusInternalServerError, "rolling updte application named " + appName + ` failed`
 	}
-	app := &application.App{Name: appName, Image: image}
 	if err := app.Update(); err != nil {
 		return r.StatusInternalServerError, "rolling update application named " + appName + ` failed`
 	}
@@ -205,8 +234,15 @@ func RollingUpdateApplication(request *http.Request) (string, interface{}) {
 
 //ReDeployApplication redeploy application
 func ReDeployApplication(request *http.Request) (string, interface{}) {
-	appName := request.FormValue("app_name")
-	namespace := request.FormValue("ns")
+	decoder := json.NewDecoder(request.Body)
+	app := &application.App{}
+	err := decoder.Decode(app)
+	if err != nil {
+		log.Errorf("decode the request body err:%v", err)
+		return r.StatusBadRequest, "json format error"
+	}
+	appName := app.Name
+	namespace := app.UserName
 	rc, exsit := sync.ListReplicationController[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
@@ -222,10 +258,17 @@ func ReDeployApplication(request *http.Request) (string, interface{}) {
 
 //ExpansionApplication expansion the application
 func ExpansionApplication(request *http.Request) (string, interface{}) {
-	appName := request.FormValue("app_name")
-	namespace := request.FormValue("ns")
-	cpu := request.FormValue("cpu")
-	memory := request.FormValue("memory")
+	decoder := json.NewDecoder(request.Body)
+	app := &application.App{}
+	err := decoder.Decode(app)
+	if err != nil {
+		log.Errorf("decode the request body err:%v", err)
+		return r.StatusBadRequest, "json format error"
+	}
+	appName := app.Name
+	namespace := app.UserName
+	cpu := app.Cpu
+	memory := app.Memory
 	rc, exsit := sync.ListReplicationController[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
@@ -243,7 +286,6 @@ func ExpansionApplication(request *http.Request) (string, interface{}) {
 	if err := resource.UpdateResouce(&rc); err != nil {
 		return r.StatusInternalServerError, "Expansion application named " + appName + " failed"
 	}
-	app := &application.App{Name: appName, Cpu: cpu, Memory: memory}
 	if err := app.Update(); err != nil {
 		return r.StatusInternalServerError, "Expansion application named " + appName + " failed:" + err.Error()
 	}

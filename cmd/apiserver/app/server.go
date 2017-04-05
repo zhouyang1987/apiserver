@@ -19,6 +19,7 @@ import (
 	"net/http"
 
 	a "apiserver/pkg/apis/app"
+	"apiserver/pkg/apis/build"
 	"apiserver/pkg/componentconfig"
 	"apiserver/pkg/configz"
 	"apiserver/pkg/resource/sync"
