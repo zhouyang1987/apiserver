@@ -241,11 +241,11 @@ func ExpansionApplication(request *http.Request) (string, interface{}) {
 		},
 	}
 	if err := resource.UpdateResouce(&rc); err != nil {
-		return r.StatusInternalServerError, "redeploy application named " + appName + " failed"
+		return r.StatusInternalServerError, "Expansion application named " + appName + " failed"
 	}
 	app := &application.App{Name: appName, Cpu: cpu, Memory: memory}
 	if err := app.Update(); err != nil {
-		return r.StatusInternalServerError, "redeploy application named " + appName + " failed:" + err.Error()
+		return r.StatusInternalServerError, "Expansion application named " + appName + " failed:" + err.Error()
 	}
-	return r.StatusCreated, "redeploy application named " + appName + " successed"
+	return r.StatusCreated, "Expansion application named " + appName + " successed"
 }

@@ -133,7 +133,7 @@
 
 查询应用。
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
 Method: GET
 
@@ -181,13 +181,13 @@ Method: GET
 
 部署应用。
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
 Method: POST
 
 **请求**
 
-- ApiURI/app 
+- ApiURI/apps 
 - JSON
 ```text
 {
@@ -222,13 +222,13 @@ Method: POST
 
 上传文件。
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
-Method: UPDATE
+Method: PUT
 
 **请求**
 
-- ApiURI/app
+- ApiURI/apps
 
 ```text
 {
@@ -257,13 +257,13 @@ Method: UPDATE
 
 停止应用。
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
 Method: PATCH
 
 **请求**
 
-- ApiURI/app
+- ApiURI/apps
 
 ```text
 {
@@ -290,9 +290,9 @@ Method: PATCH
 
 删除应用。
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
-Method: GET
+Method: DELETE
 
 **请求**
 
@@ -310,10 +310,10 @@ Method: GET
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 201,
-  "err": 0,
-  "msg": "delete app successed",
+  "api": "1.0",
+  "status": "204",
+  "err": "OK",
+  "msg": "delete app successed"
 }
 ```
 
@@ -321,16 +321,17 @@ Method: GET
 
 弹性伸缩。
 
-URI: ApiURI/app
+URI: ApiURI/apps/scale
 
-Method: UPDATE
+Method: PATCH
 
 **请求**
 
 ```text
 {
-	"id":1,
-	"container_cnt":5
+  "app_name":"test",
+  "ns":"huangjia",
+  "app_cnt":3
 }
 ```
 
@@ -341,10 +342,10 @@ Method: UPDATE
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 201,
-  "err": 0,
-  "msg": "scale app successed",
+  "api": "1.0",
+  "status": "201",
+  "err": "OK",
+  "msg": "scale application named test successed"
 }
 ```
 
@@ -352,17 +353,17 @@ Method: UPDATE
 
 灰度升级。
 
-URI: ApiURI/app
+URI: ApiURI/apps/rollupdate
 
-Method: UPDATE
+Method: POST
 
 **请求**
 
 ```text
 {
-	"id":1,
-	"image":"regisrty/test-web:1.3",
-	"interval":60
+  "app_name":"test",
+  "ns":"huangjia",
+  "image":"index.tenxcloud.com/carrotzpc/docker-2048:20150730"
 }
 ```
 
@@ -373,27 +374,27 @@ Method: UPDATE
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 201,
-  "err": 0,
-  "msg": "rolling update app successed",
+  "api": "1.0",
+  "status": "201",
+  "err": "OK",
+  "msg": "rolling update application named test successed"
 }
 ```
 
 ### <span id="10.8">重新部署</span>
 
-灰度升级。
+重新部署。（该接口暂时还未提供）
 
-URI: ApiURI/app
+URI: ApiURI/apps
 
 Method: UPDATE
 
 **请求**
 
 ```text
-{
-	"id":1
-}
+<!-- {
+  "id":1
+} -->
 ```
 
 **响应**
@@ -402,29 +403,31 @@ Method: UPDATE
 - JSON:
 
 ```text
-{
+<!-- {
   "apiversion": "alpha",
   "code": 201,
   "err": 0,
   "msg": "rolling update app successed",
-}
+} -->
 ```
 
 ### <span id="10.9">动态扩容</span>
 
 动态扩容。
 
-URI: ApiURI/app
+URI: ApiURI/apps/expansion
 
-Method: UPDATE
+Method: PUT
 
 **请求**
 
 ```text
+
 {
-	"id":1,
-	"cpu":"512m",
-	"memory":"512mi"
+  "app_name":"test",
+  "ns":"huangjia",
+	"cpu":"512Mi",
+	"memory":"512m"
 }
 ```
 
@@ -435,9 +438,9 @@ Method: UPDATE
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 201,
-  "err": 0,
-  "msg": "rolling update app successed",
+  "api": "1.0",
+  "status": "201",
+  "err": "OK",
+  "msg": "Expansion application named test successed"
 }
 ```
