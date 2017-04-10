@@ -32,6 +32,8 @@ import (
 )
 
 func Register(rout *mux.Router) {
+	r.RegisterHttpHandler(rout, "/apps", "GET", GetApplication)
+	r.RegisterHttpHandler(rout, "/apps", "OPTIONS", Option)
 	r.RegisterHttpHandler(rout, "/apps", "POST", CreateApplication)
 	r.RegisterHttpHandler(rout, "/apps", "DELETE", DeleteApplication)
 	r.RegisterHttpHandler(rout, "/apps", "PATCH", StopApplication)
@@ -40,6 +42,20 @@ func Register(rout *mux.Router) {
 	r.RegisterHttpHandler(rout, "/apps/expansion", "PUT", ExpansionApplication)
 	r.RegisterHttpHandler(rout, "/apps/rollupdate", "POST", RollingUpdateApplication)
 	// r.RegisterHttpHandler(rout, "/apps/redeploy", "POST", RollingApplication)
+}
+
+func GetApplication(request *http.Request) (string, interface{}) {
+	app := &application.App{}
+	list, err := app.QuerySet()
+	if err != nil {
+		return r.StatusInternalServerError, err
+	}
+
+	return r.StatusOK, list
+}
+
+func Option(request *http.Request) (string, interface{}) {
+	return r.StatusOK, nil
 }
 
 //CreateApplication create the application

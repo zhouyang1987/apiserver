@@ -28,9 +28,11 @@ var (
 )
 
 func init() {
-	host := configz.GetString("build", "endpoint", "127.0.0.1：2375")
+	host := configz.GetString("build", "endpoint", "127.0.0.1:2375")
 	version := configz.GetString("build", "version", "12.4")
-	cl := &http.Client{}
+	cl := &http.Client{
+		Transport: new(http.Transport),
+	}
 	DockerClient, err = client.NewClient(host, version, cl, nil)
 	if err != nil {
 		log.Fatalf("init docker client err: %v", err)
