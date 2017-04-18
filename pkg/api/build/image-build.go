@@ -36,6 +36,8 @@ type Build struct {
 	Branch     string    `json:"branch" xorm:"not null varchar(255)"`
 	Status     int       `json:"status" xorm:"not null int(1)"`
 	Create_At  time.Time `json:"create_at" xorm:"created not null"`
+	UserId     string    `json:"branch" xorm:"not null varchar(255)"`
+	language   string    `json:"branch" xorm:"not null varchar(255)"`
 }
 
 var (

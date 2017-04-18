@@ -16,6 +16,7 @@ package application
 
 import (
 	"errors"
+	"time"
 
 	"apiserver/pkg/storage/mysqld"
 	"apiserver/pkg/util/jsonx"
@@ -64,6 +65,9 @@ type App struct {
 	Status        AppStatus         `json:"status" xorm:"int(1) default(0)"` //构建中 0 成功 1 失败 2 运行中 3 停止 4 删除 5
 	UserName      string            `json:"userName" xorm:"varchar(256)"`
 	Remark        string            `json:"remark" xorm:"varchar(1024)"`
+	CreateAt      time.Time         `json:"create_at" xorm:"created"`
+	ReviseAt      time.Time         `json:"revise_at" xorm:"updated"`
+	Url           string            `json:"url" xorm:"varchar(1024)"`
 	// Mount         VolumeMount       `json:"mount" xorm:"varchar(1024)"`
 	// Volume        []string          `json:"volume" xorm:"varchar(1024)"`
 }
@@ -152,7 +156,7 @@ func (app *App) QueryOne() (*App, error) {
 
 func (app *App) QuerySet() ([]*App, error) {
 	appSet := []*App{}
-	err := engine.Where("1 and 1 order by id desc").Find(&appSet)
+	err := engine.Where("1 and 1 order by name desc").Find(&appSet)
 	if err != nil {
 		return nil, err
 	}

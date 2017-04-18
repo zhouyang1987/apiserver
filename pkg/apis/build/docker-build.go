@@ -16,13 +16,22 @@ package build
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 
 	"apiserver/pkg/api/build"
+	"apiserver/pkg/client"
 	r "apiserver/pkg/router"
 	"apiserver/pkg/util/log"
 
 	"github.com/gorilla/mux"
+	"golang.org/x/net/context"
+)
+
+const (
+	DEFAULT_REGISTRY = `hub.mini-paas.com`
+	TARBALL_ROOT_DIR = `/tmp`
 )
 
 func Register(rout *mux.Router) {
@@ -53,5 +62,45 @@ func OfflineBuild(request *http.Request) (string, interface{}) {
 		return r.StatusBadRequest, "json format error"
 	}
 
-	return r.StatusCreated, nil
+	//build image's step:
+	//1. find the upload tarball file of user uploaded in TARBALL_ROOT_DIR/userid/ dir
+	//2. find the Dockerfile file of the user upload in TARBALL_ROOT_DIR/userid/ dir
+	//3. if the Dockerfile exsit,we will use the tarball and the Dockerfile to create a tar file's stream in order to build image.
+	//4. if the Dokcerfile didn't exsit,will be use the Dockerfile template to create Dockerfile by the project's type. for exampler:if
+	//the project's language is golang, we will use the golang's Dockerfile template,and then we will use the tarball and the Dockerfile
+	//to create a tar file's stream in order to build image.
+
+	Dockerfile := fmt.Sprintf("%s/%s/%s", TARBALL_ROOT_DIR, builder.UserId, "Dockerfile")
+	fileInfo, err := os.Stat(Dockerfile)
+	if err != nil {
+		log.Errorf("Dockerfile doesn't exsit: %v", err)
+		return r.StatusInternalServerError, "build image fail"
+	}
+
+	tarball := fmt.Sprintf("%s/%s/%s", TARBALL_ROOT_DIR, builder.UserId, builder.Tarball)
+	buildContext, err := os.Open(tarball)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	image_repo := fmt.Sprintf("%s/%s:%s", DEFAULT_REGISTRY, builder.AppName, builder.Version)
+	options := types.ImageBuildOptions{
+		Tags:       []string{image_repo},
+		Dockerfile: "Dockerfile",
+	}
+	buildResponse, err := cli.ImageBuild(context.Background(), buildContext, options)
+	if err != nil {
+
+	}
+	res, err := ioutil.ReadAll(buildResponse.Body)
+	if err != nil {
+		log.Errorf("read the build image response err: %v", err)
+		return r.StatusInternalServerError, err.Error()
+	}
+
+	return r.StatusCreated, string(res)
+}
+
+func BuildProject(url string) {
+
 }

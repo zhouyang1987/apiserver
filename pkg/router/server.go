@@ -121,7 +121,9 @@ const httpJsonRespFmt = `{
 
 func writeHttpResp(w http.ResponseWriter, dump string, status string, body interface{}, t time.Time) {
 	w.Header().Set("Content-Type", "application/json")
-
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS,PUT,DELETE")
 	sub := time.Now().Sub(t)
 	// empty array
 	if body == JSON_EMPTY_ARRAY {
