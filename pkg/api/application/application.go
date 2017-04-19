@@ -63,10 +63,11 @@ type App struct {
 	Image         string            `json:"image" xorm:"varchar(255)"`
 	Command       []string          `json:"command" xorm:"varchar(255)"`
 	Status        AppStatus         `json:"status" xorm:"int(1) default(0)"` //构建中 0 成功 1 失败 2 运行中 3 停止 4 删除 5
-	UserName      string            `json:"userName" xorm:"varchar(255)"`
-	Remark        string            `json:"remark" xorm:"varchar(255)"`
-	Url           string            `json:"url" xorm:"varchar(255)"`
+	UserName      string            `json:"userName" xorm:"varchar(256)"`
+	Remark        string            `json:"remark" xorm:"varchar(1024)"`
 	CreateAt      time.Time         `json:"create_at" xorm:"created"`
+	ReviseAt      time.Time         `json:"revise_at" xorm:"updated"`
+	Url           string            `json:"url" xorm:"varchar(1024)"`
 	// Mount         VolumeMount       `json:"mount" xorm:"varchar(1024)"`
 	// Volume        []string          `json:"volume" xorm:"varchar(1024)"`
 }

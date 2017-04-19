@@ -39,8 +39,11 @@ func Register(rout *mux.Router) {
 	r.RegisterHttpHandler(rout, "/apps", "PATCH", StopApplication)
 	r.RegisterHttpHandler(rout, "/apps", "PUT", StartApplication)
 	r.RegisterHttpHandler(rout, "/apps/scale", "PATCH", ScaleApplication)
+	r.RegisterHttpHandler(rout, "/apps/scale", "OPTIONS", Option)
 	r.RegisterHttpHandler(rout, "/apps/expansion", "PUT", ExpansionApplication)
+	r.RegisterHttpHandler(rout, "/apps/expansion", "OPTIONS", Option)
 	r.RegisterHttpHandler(rout, "/apps/rollupdate", "POST", RollingUpdateApplication)
+	r.RegisterHttpHandler(rout, "/apps/rollupdate", "OPTIONS", Option)
 	// r.RegisterHttpHandler(rout, "/apps/redeploy", "POST", RollingApplication)
 }
 
