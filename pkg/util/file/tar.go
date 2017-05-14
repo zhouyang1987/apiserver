@@ -14,11 +14,11 @@ import (
 //Tar tar some file to tar.gz file,it's same as: tar czf file1 file2 ....
 //if fileExsit true will delete it and tar file ,if false will not do anything
 func Tar(dstTar string, override bool, src ...string) (err error) {
-	if !FileExsit(src...) {
+	if !Exists(src...) {
 		return errors.New(fmt.Sprintf("file %v doesn't exsit", strings.Join(src, ",")))
 	}
 	dstTar = path.Clean(dstTar)
-	if FileExsit(dstTar) {
+	if Exists(dstTar) {
 		if override {
 			if err := os.Remove(dstTar); err != nil {
 				return err

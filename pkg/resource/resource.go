@@ -330,10 +330,12 @@ func WatchPodStatus(app *application.App) {
 				}
 				if err := app.Update(); err != nil {
 					log.Errorf("update application's status to %s err:%v", application.Status[app.Status], err)
+
+					continue
+				} else {
 					if app.Status == application.AppRunning {
 						break
 					}
-					continue
 				}
 			}
 		}

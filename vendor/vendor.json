@@ -23,6 +23,13 @@
 			"revisionTime": "2016-11-21T22:43:40Z"
 		},
 		{
+			"checksumSHA1": "5fGKVr9aEn4HHsvuDL/4bmZ3pic=",
+			"path": "github.com/astaxie/beego",
+			"revision": "83814a76cc77279d5d979780e82f4464b33677c3",
+			"revisionTime": "2017-05-02T04:47:15Z",
+			"tree": true
+		},
+		{
 			"checksumSHA1": "JYVxwR0rMkpsCZkQzig/lQszMI4=",
 			"origin": "k8s.io/client-go/vendor/github.com/davecgh/go-spew/spew",
 			"path": "github.com/davecgh/go-spew/spew",

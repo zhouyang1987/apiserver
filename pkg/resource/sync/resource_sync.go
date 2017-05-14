@@ -46,6 +46,7 @@ func ListResource() {
 		List(metav1.ListOptions{})
 	if err != nil {
 		log.Errorf("list and watch k8s's namespace err: %v", err)
+		return
 	} else {
 		if len(nsList.Items) > 0 {
 			loop(nsList, "")

@@ -23,6 +23,12 @@ import (
 	"apiserver/pkg/util/log"
 )
 
+const (
+	BUILDING      = 0
+	BUILD_SUCCESS = 1
+	BUILD_FAILED  = 2
+)
+
 type Build struct {
 	Id         int       `json:"id" xorm:"pk not null autoincr"`
 	AppName    string    `json:"app_name" xorm:"not null varchar(255)"`
@@ -34,10 +40,11 @@ type Build struct {
 	Registry   string    `json:"registry" xorm:"not null varchar(255)"`
 	Repositroy string    `json:"repository" xorm:"not null varchar(255)"`
 	Branch     string    `json:"branch" xorm:"not null varchar(255)"`
-	Status     int       `json:"status" xorm:"not null int(1)"`
+	Status     int       `json:"status" xorm:"not null int(1)"` //0 构建中 1 构建成功 2 构建失败
+	BuildLog   string    `json:"buildLog" xorm:"not null varchar(4096)"`
 	Create_At  time.Time `json:"create_at" xorm:"created not null"`
-	UserId     string    `json:"branch" xorm:"not null varchar(255)"`
-	language   string    `json:"branch" xorm:"not null varchar(255)"`
+	UserId     string    `json:"userId" xorm:"not null varchar(255)"`
+	Language   string    `json:"language" xorm:"not null varchar(255)"`
 }
 
 var (

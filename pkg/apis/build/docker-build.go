@@ -33,14 +33,18 @@ import (
 )
 
 const (
-	DEFAULT_REGISTRY    = `hub.mini-paas.com`
-	TARBALL_ROOT_DIR    = `/tmp`
-	BUILD_IMAGE_TAR_DIR = `/tmp/build`
+	DEFAULT_REGISTRY = `hub.mini-paas.com`
+	/*	TARBALL_ROOT_DIR    = `/tmp`
+		BUILD_IMAGE_TAR_DIR = `/tmp/build`*/
+	//incorde to test,my env is windows ,so l use this
+	TARBALL_ROOT_DIR    = `F:\workspace\src\huangjia`
+	BUILD_IMAGE_TAR_DIR = `F:\workspace\src\huangjia`
 )
 
 func Register(rout *mux.Router) {
-	r.RegisterHttpHandler(rout, "/build", "POST", OnlineBuild)
-	r.RegisterHttpHandler(rout, "/build", "PUT", OfflineBuild)
+	r.RegisterHttpHandler(rout, "/builds", "POST", OnlineBuild)
+	r.RegisterHttpHandler(rout, "/builds", "PUT", OfflineBuild)
+	r.RegisterHttpHandler(rout, "/uploads", "POST", Upload)
 }
 
 //OnlineBuild build application online
@@ -57,6 +61,13 @@ func OnlineBuild(request *http.Request) (string, interface{}) {
 }
 
 //OfflineBuild build application offline
+////build image's step:
+//1. find the upload tarball file of user uploaded in TARBALL_ROOT_DIR/userid/ dir
+//2. find the Dockerfile file of the user upload in TARBALL_ROOT_DIR/userid/ dir
+//3. if the Dockerfile exsit,we will use the tarball and the Dockerfile to create a tar file's stream in order to build image.
+//4. if the Dokcerfile didn't exsit,will be use the Dockerfile template to create Dockerfile by the project's type. for exampler:if
+//the project's language is golang, we will use the golang's Dockerfile template,and then we will use the tarball and the Dockerfile
+//to create a tar file's stream in order to build image.
 func OfflineBuild(request *http.Request) (string, interface{}) {
 	decoder := json.NewDecoder(request.Body)
 	builder := &build.Build{}
@@ -66,13 +77,6 @@ func OfflineBuild(request *http.Request) (string, interface{}) {
 		return r.StatusBadRequest, "json format error"
 	}
 
-	//build image's step:
-	//1. find the upload tarball file of user uploaded in TARBALL_ROOT_DIR/userid/ dir
-	//2. find the Dockerfile file of the user upload in TARBALL_ROOT_DIR/userid/ dir
-	//3. if the Dockerfile exsit,we will use the tarball and the Dockerfile to create a tar file's stream in order to build image.
-	//4. if the Dokcerfile didn't exsit,will be use the Dockerfile template to create Dockerfile by the project's type. for exampler:if
-	//the project's language is golang, we will use the golang's Dockerfile template,and then we will use the tarball and the Dockerfile
-	//to create a tar file's stream in order to build image.
 	dockerfile := fmt.Sprintf("%s/%s/%s", TARBALL_ROOT_DIR, builder.UserId, "Dockerfile")
 	if !file.FileExsit(dockerfile) {
 		//TODO generate the Dockerfile by Dockerfile template
@@ -95,7 +99,8 @@ func OfflineBuild(request *http.Request) (string, interface{}) {
 
 	buildResponse, err := client.DockerClient.ImageBuild(context.Background(), buildContext, options)
 	if err != nil {
-
+		log.Errorf("build image err: %v", err)
+		return r.StatusInternalServerError, err.Error()
 	}
 	res, err := ioutil.ReadAll(buildResponse.Body)
 	if err != nil {
@@ -103,6 +108,18 @@ func OfflineBuild(request *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, err.Error()
 	}
 
+	builder.Image = image_repo
+	builder.Status = build.BUILD_SUCCESS
+	builder.BuildLog = string(res)
+	if err = builder.Insert(); err != nil {
+		log.Errorf("insert the build to db err: %v", err)
+	}
+
+	pushRes, err := pushImage(image_repo)
+	if err != nil {
+		return r.StatusInternalServerError, "build image successed,but push image to registry err :" + err.Error()
+	}
+	log.Debugf("push result ==%v", pushRes)
 	return r.StatusCreated, string(res)
 }
 
@@ -117,4 +134,27 @@ func BuildProject(request *http.Request) (string, interface{}) {
 	//5. if the project doesn't include Dockerfile,and the generate the Dockerfile by Dockerfile templaet
 	//TODO
 	return r.StatusOK, "build the project resource success"
+}
+
+func pushImage(image string) (string, error) {
+	res, err := client.DockerClient.ImagePush(context.Background(), image, types.ImagePushOptions{})
+	if err != nil {
+		return "", err
+	}
+	pushResult, err := ioutil.ReadAll(res)
+	if err != nil {
+		log.Errorf("read the build image response err: %v", err)
+		return r.StatusInternalServerError, err
+	}
+	return string(pushResult), err
+}
+
+func Upload(request *http.Request) (string, interface{}) {
+	// filePath := fmt.Sprintf("%s/%s/%s", TARBALL_ROOT_DIR, builder.UserId, "Dockerfile")
+	//when the autorization is finished , get UserId from session,but now write is U001
+	fileDir := fmt.Sprintf("%s/%s", TARBALL_ROOT_DIR, "U001")
+	if err := file.Upload(request, fileDir); err != nil {
+		return r.StatusInternalServerError, err.Error()
+	}
+	return r.StatusCreated, "upload file successed"
 }
