@@ -29,7 +29,7 @@ var (
 
 func init() {
 	host := configz.GetString("build", "endpoint", "127.0.0.1:2375")
-	version := configz.GetString("build", "version", "12.4")
+	version := configz.GetString("build", "version", "1.24")
 	cl := &http.Client{
 		Transport: new(http.Transport),
 	}
