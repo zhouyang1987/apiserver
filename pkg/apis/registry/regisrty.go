@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	regModel "apiserver/pkg/api/registry"
@@ -32,13 +33,20 @@ import (
 
 func Register(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/images", "GET", GetImages)
-	r.RegisterHttpHandler(router, "/images", "DELETE", DeleteImage)
+	r.RegisterHttpHandler(router, "/images", "OPTIONS", Option)
+	// r.RegisterHttpHandler(router, "/images", "DELETE", DeleteImage)
 }
 
 var (
 	registry *regUtil.Registry
 	err      error
+	store    *storage
 )
+
+type storage struct {
+	lock  sync.RWMutex
+	cache map[string]interface{}
+}
 
 func init() {
 	tranport := regUtil.GetHttpTransport(false)
@@ -47,7 +55,12 @@ func init() {
 	if registry, err = regUtil.NewRegistry(endpoint, client); err != nil {
 		log.Fatalf("init resgistry err: %v", err)
 	}
+	store = &storage{cache: map[string]interface{}{}}
 	go task()
+}
+
+func Option(request *http.Request) (string, interface{}) {
+	return r.StatusOK, nil
 }
 
 func GetImages(req *http.Request) (string, interface{}) {
@@ -60,10 +73,38 @@ func GetImages(req *http.Request) (string, interface{}) {
 	if err != nil {
 		return r.StatusInternalServerError, err
 	}
-	return r.StatusOK, map[string]interface{}{"images": set, "total": total}
+	imageSet := []*regModel.Image{}
+	if tags, exsit := store.cache[name]; exsit {
+		image := &regModel.Image{}
+		for _, m := range set {
+			image.Name = name
+			image.TagLen = len(tags.([]string))
+			image.Fest = append(image.Fest, m)
+		}
+		if image.Name != "" {
+			imageSet = append(imageSet, image)
+		}
+	} else {
+		for k, v := range store.cache {
+			image := &regModel.Image{}
+			for _, m := range set {
+				if k == m.Name {
+					image.Name = k
+					image.TagLen = len(v.([]string))
+					image.Fest = append(image.Fest, m)
+				}
+			}
+			if image.Name != "" {
+				imageSet = append(imageSet, image)
+			}
+		}
+	}
+
+	return r.StatusOK, map[string]interface{}{"images": imageSet, "total": total}
 }
 
-func DeleteImage(req *http.Request) (string, interface{}) {
+/*func DeleteImage(req *http.Request) (string, interface{}) {
+
 	id := req.FormValue("id")
 	m := &regModel.Manifest{Id: id}
 	err := m.Delete()
@@ -71,7 +112,7 @@ func DeleteImage(req *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, err
 	}
 	return r.StatusOK, nil
-}
+}*/
 
 func task() {
 	ticker := time.NewTicker(time.Second * 10)
@@ -95,11 +136,14 @@ func SyncImage() {
 		return
 	}
 	for _, catalog := range catalogs {
+		store.lock.Lock()
 		tags, err := registry.GetTags(catalog)
 		if err != nil {
 			log.Errorf("get the tags catalog named %v  err:%v", catalog, err)
 			continue
 		}
+		store.cache[catalog] = tags
+		store.lock.Unlock()
 		for _, tag := range tags {
 			manifest, err := registry.GetManifest(catalog, tag)
 			if err != nil {

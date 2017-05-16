@@ -17,6 +17,7 @@ package router
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"strconv"
@@ -119,45 +120,63 @@ const httpJsonRespFmt = `{
 }
 `
 
+type httpRes struct {
+	Apiversion string      `json:"apiversion"`
+	Status     string      `json:"status"`
+	Err        string      `json:"err,omitempty"`
+	Data       interface{} `json:"data,omitempty"`
+}
+
 func writeHttpResp(w http.ResponseWriter, dump string, status string, body interface{}, t time.Time) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS,PUT,DELETE")
 	sub := time.Now().Sub(t)
-	// empty array
-	if body == JSON_EMPTY_ARRAY {
-		log.Info(dump, status, sub)
-		fmt.Fprintf(w, httpJsonRespFmt, status, `""`, body)
-		return
+	/*	sub := time.Now().Sub(t)
+		// empty array
+		if body == JSON_EMPTY_ARRAY {
+			log.Info(dump, status, sub)
+			fmt.Fprintf(w, httpJsonRespFmt, status, `""`, body)
+			return
+		}
+
+		if body == JSON_EMPTY_OBJ {
+			log.Info(dump, status, sub)
+			fmt.Fprintf(w, httpJsonRespFmt, status, `""`, body)
+			return
+		}
+
+		errStr, data := "", JSON_EMPTY_OBJ
+		res, err := json.MarshalIndent(body, " ", "    ")
+		if err != nil {
+			errStr = `"` + err.Error() + `"`
+			log.Debug(dump, status, errStr, data, sub)
+			fmt.Fprintf(w, httpJsonRespFmt, status, errStr, data)
+			return
+		}
+
+		// error
+		if status != StatusOK && status != StatusCreated && status != StatusNoContent {
+			errStr = string(res)
+			log.Debug(dump, status, errStr, data, sub)
+			fmt.Fprintf(w, httpJsonRespFmt, status, errStr, data)
+			return
+		}
+
+		errStr = `"` + OK + `"`
+		data = string(res)
+
+		log.Debug(dump, status, sub)
+		fmt.Fprintf(w, httpJsonRespFmt, status, errStr, data)*/
+	res := &httpRes{Apiversion: "v1", Status: status}
+	if err, ok := body.(error); ok {
+		res.Err = err.Error()
+	} else {
+		res.Data = body
 	}
 
-	if body == JSON_EMPTY_OBJ {
-		log.Info(dump, status, sub)
-		fmt.Fprintf(w, httpJsonRespFmt, status, `""`, body)
-		return
-	}
-
-	errStr, data := "", JSON_EMPTY_OBJ
-	res, err := json.MarshalIndent(body, " ", "    ")
-	if err != nil {
-		errStr = `"` + err.Error() + `"`
-		log.Debug(dump, status, errStr, data, sub)
-		fmt.Fprintf(w, httpJsonRespFmt, status, errStr, data)
-		return
-	}
-
-	// error
-	if status != StatusOK && status != StatusCreated && status != StatusNoContent {
-		errStr = string(res)
-		log.Debug(dump, status, errStr, data, sub)
-		fmt.Fprintf(w, httpJsonRespFmt, status, errStr, data)
-		return
-	}
-
-	errStr = `"` + OK + `"`
-	data = string(res)
-
+	resdate, _ := json.MarshalIndent(res, " ", "    ")
 	log.Debug(dump, status, sub)
-	fmt.Fprintf(w, httpJsonRespFmt, status, errStr, data)
+	io.WriteString(w, string(resdate))
 }

@@ -170,3 +170,12 @@ func (this *Registry) GetManifest(catalog, reference string) (*schema1.Manifest,
 	}
 	return manifest, nil
 }
+
+/*func (this *Registry) DelManifest(catalog, reference string) (*schema1.Manifest, error) {
+	suffix := fmt.Sprintf("/v2/%s/manifests/%s", catalog, reference)
+	req := http.NewRequest("DELETE", this.Endpoint.String(), nil)
+	res, err := this.Client.Do(req)
+	if err != nil {
+
+	}
+}*/

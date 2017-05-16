@@ -13,8 +13,9 @@ var (
 )
 
 type Image struct {
-	Name string      `json:"name"`
-	Fest []*Manifest `json:"manifest"`
+	Name   string      `json:"name"`
+	TagLen int         `json:"tagLen"`
+	Fest   []*Manifest `json:"manifest"`
 }
 
 type Manifest struct {
@@ -31,7 +32,6 @@ type Manifest struct {
 }
 
 func init() {
-	engine.ShowSQL(true)
 	if err := engine.Sync(new(Manifest)); err != nil {
 		log.Fatalf("Sync fail :%s", err.Error())
 	}
@@ -79,7 +79,6 @@ func (manifest *Manifest) QueryOne() (*Manifest, error) {
 }
 
 func (manifest *Manifest) QuerySet(where map[string]interface{}) (fests []*Manifest, total int64, err error) {
-	log.Infof("%#v", where)
 	pageCnt := where["pageCnt"].(int)
 	pageNum := where["pageNum"].(int)
 	if where["name"].(string) != "" {
@@ -87,16 +86,16 @@ func (manifest *Manifest) QuerySet(where map[string]interface{}) (fests []*Manif
 		if err = engine.Where("name=?", name).Limit(pageCnt, pageCnt*pageNum).Desc("name").Find(&fests); err != nil {
 			return
 		}
-		/*if total, err = engine.Where("name=?", name).Count(manifest); err != nil {
+		if total, err = engine.Distinct("name").Where("name=?", name).Count(Manifest{}); err != nil {
 			return
-		}*/
+		}
 	} else {
 		if err = engine.Limit(pageCnt, pageCnt*pageNum).Desc("name").Find(&fests); err != nil {
 			return
 		}
-		/*if total, err = engine.Count(manifest); err != nil {
+		if total, err = engine.Distinct("name").Count(Manifest{}); err != nil {
 			return
-		}*/
+		}
 	}
 	return
 }

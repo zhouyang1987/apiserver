@@ -25,6 +25,8 @@
   - [动态扩容](#10.9)
 * **[docker-build组件模块](#11)**
   - [ 构建应用](#11.1)
+* **[registry组件模块](#12)**
+  - [获取镜像列表](#12.1)
 
 # <span id="2">协议</span>
 
@@ -540,3 +542,136 @@ Method: PUT
   "msg": "build application successed"
 }
 ```
+
+
+- registry组件api
+
+## <span id="12">registry组件模块</span>
+---
+
+### <span id="12.1">获取镜像列表</span>
+
+获取镜像列表。
+
+URI: ApiURI/images
+
+Method: GET
+
+**请求**
+
+- ApiURI/images?name=imageName&&pageNum=0&&pageCnt=10
+
+```
+**参数说明**：
+- name:镜像名称，没有传入默认查询全部的镜像
+- pageNum:分页页码，
+- pageCnt:分页每页行数
+
+**响应**
+
+- HTTP Status: 200;
+- JSON:
+
+```text
+{
+     "apiversion": "v1",
+     "status": "200",
+     "date": {
+         "images": [
+             {
+                 "name": "busybox",
+                 "tagLen": 1,
+                 "manifest": [
+                     {
+                         "name": "busybox",
+                         "tag": "latest",
+                         "architecture": "amd64",
+                         "os": "linux",
+                         "author": "",
+                         "id": "21bd05c98a33998aba2cea975e0fcdc4c8b051070b70ed36f28c0bc55bcdacb6",
+                         "parent": "86549330fef190e649817430dfaba05934d46b450fe2004cc1e2afc36587054c",
+                         "created": "2017-03-09T18:28:04.586987216Z",
+                         "docker_version": "1.12.6",
+                         "pull": "docker pull http://10.4.94.98:5000/busybox:latest"
+                     }
+                 ]
+             },
+             {
+                 "name": "huangjia/pause-amd64",
+                 "tagLen": 1,
+                 "manifest": [
+                     {
+                         "name": "huangjia/pause-amd64",
+                         "tag": "3.0",
+                         "architecture": "amd64",
+                         "os": "linux",
+                         "author": "",
+                         "id": "bebc58b30ecc163fe8a56301e2fff15de40d225663c95134ff5f242ebb8a516e",
+                         "parent": "ce598428d6bb655a3c88cf9d60d4e728bffb94d82f578fbfa30236bea68c92a0",
+                         "created": "2016-05-04T06:26:41.522308365Z",
+                         "docker_version": "1.9.1",
+                         "pull": "docker pull http://10.4.94.98:5000/huangjia/pause-amd64:3.0"
+                     }
+                 ]
+             },
+             {
+                 "name": "pause-amd64",
+                 "tagLen": 2,
+                 "manifest": [
+                     {
+                         "name": "pause-amd64",
+                         "tag": "3.1",
+                         "architecture": "amd64",
+                         "os": "linux",
+                         "author": "",
+                         "id": "bebc58b30ecc163fe8a56301e2fff15de40d225663c95134ff5f242ebb8a516e",
+                         "parent": "ce598428d6bb655a3c88cf9d60d4e728bffb94d82f578fbfa30236bea68c92a0",
+                         "created": "2016-05-04T06:26:41.522308365Z",
+                         "docker_version": "1.9.1",
+                         "pull": "docker pull http://10.4.94.98:5000/pause-amd64:3.1"
+                     },
+                     {
+                         "name": "pause-amd64",
+                         "tag": "3.0",
+                         "architecture": "amd64",
+                         "os": "linux",
+                         "author": "",
+                         "id": "bebc58b30ecc163fe8a56301e2fff15de40d225663c95134ff5f242ebb8a516e",
+                         "parent": "ce598428d6bb655a3c88cf9d60d4e728bffb94d82f578fbfa30236bea68c92a0",
+                         "created": "2016-05-04T06:26:41.522308365Z",
+                         "docker_version": "1.9.1",
+                         "pull": "docker pull http://10.4.94.98:5000/pause-amd64:3.0"
+                     }
+                 ]
+             }
+         ],
+         "total": 3
+     }
+ }
+```
+
+-- 说明：
+images:镜像列表
+
+{
+   "name": "busybox",
+   "tagLen": 1,
+   "manifest": [
+       {
+           "name": "busybox",
+           "tag": "latest",
+           "architecture": "amd64",
+           "os": "linux",
+           "author": "",
+           "id": "21bd05c98a33998aba2cea975e0fcdc4c8b051070b70ed36f28c0bc55bcdacb6",
+           "parent": "86549330fef190e649817430dfaba05934d46b450fe2004cc1e2afc36587054c",
+           "created": "2017-03-09T18:28:04.586987216Z",
+           "docker_version": "1.12.6",
+           "pull": "docker pull http://10.4.94.98:5000/busybox:latest"
+       }
+   ]
+}
+
+-- nmae:镜像名称
+-- tagLen:镜像版本个数
+-- manifest:镜像的详细信息

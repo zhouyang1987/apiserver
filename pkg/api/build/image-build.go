@@ -52,7 +52,6 @@ var (
 )
 
 func init() {
-	engine.ShowSQL(true)
 	if err := engine.Sync(new(Build)); err != nil {
 		log.Fatalf("Sync fail :%s", err.Error())
 	}
