@@ -180,6 +180,20 @@ func isStructZero(v reflect.Value) bool {
 	return true
 }
 
+func isArrayValueZero(v reflect.Value) bool {
+	if !v.IsValid() || v.Len() == 0 {
+		return true
+	}
+
+	for i := 0; i < v.Len(); i++ {
+		if !isZero(v.Index(i).Interface()) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func int64ToIntValue(id int64, tp reflect.Type) reflect.Value {
 	var v interface{}
 	switch tp.Kind() {
@@ -438,7 +452,7 @@ func row2mapStr(rows *core.Rows, fields []string) (resultsMap map[string]string,
 	return result, nil
 }
 
-func txQuery2(tx *core.Tx, sqlStr string, params ...interface{}) (resultsSlice []map[string]string, err error) {
+func txQuery2(tx *core.Tx, sqlStr string, params ...interface{}) ([]map[string]string, error) {
 	rows, err := tx.Query(sqlStr, params...)
 	if err != nil {
 		return nil, err
@@ -448,13 +462,8 @@ func txQuery2(tx *core.Tx, sqlStr string, params ...interface{}) (resultsSlice [
 	return rows2Strings(rows)
 }
 
-func query2(db *core.DB, sqlStr string, params ...interface{}) (resultsSlice []map[string]string, err error) {
-	s, err := db.Prepare(sqlStr)
-	if err != nil {
-		return nil, err
-	}
-	defer s.Close()
-	rows, err := s.Query(params...)
+func query2(db *core.DB, sqlStr string, params ...interface{}) ([]map[string]string, error) {
+	rows, err := db.Query(sqlStr, params...)
 	if err != nil {
 		return nil, err
 	}
@@ -588,7 +597,6 @@ func indexName(tableName, idxName string) string {
 }
 
 func getFlagForColumn(m map[string]bool, col *core.Column) (val bool, has bool) {
-
 	if len(m) == 0 {
 		return false, false
 	}

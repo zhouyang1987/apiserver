@@ -34,7 +34,10 @@ func newRows(session *Session, bean interface{}) (*Rows, error) {
 	var sqlStr string
 	var args []interface{}
 
-	rows.session.Statement.setRefValue(rValue(bean))
+	if err := rows.session.Statement.setRefValue(rValue(bean)); err != nil {
+		return nil, err
+	}
+
 	if len(session.Statement.TableName()) <= 0 {
 		return nil, ErrTableNotFound
 	}
@@ -112,7 +115,12 @@ func (rows *Rows) Scan(bean interface{}) error {
 		return fmt.Errorf("scan arg is incompatible type to [%v]", rows.beanType)
 	}
 
-	_, err := rows.session.row2Bean(rows.rows, rows.fields, len(rows.fields), bean)
+	dataStruct := rValue(bean)
+	if err := rows.session.Statement.setRefValue(dataStruct); err != nil {
+		return err
+	}
+	_, err := rows.session.row2Bean(rows.rows, rows.fields, len(rows.fields), bean, &dataStruct, rows.session.Statement.RefTable)
+
 	return err
 }
 

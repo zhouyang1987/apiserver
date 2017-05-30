@@ -41,13 +41,17 @@ func (session *Session) Find(rowsSlicePtr interface{}, condiBean ...interface{})
 		if sliceElementType.Kind() == reflect.Ptr {
 			if sliceElementType.Elem().Kind() == reflect.Struct {
 				pv := reflect.New(sliceElementType.Elem())
-				session.Statement.setRefValue(pv.Elem())
+				if err := session.Statement.setRefValue(pv.Elem()); err != nil {
+					return err
+				}
 			} else {
 				tp = tpNonStruct
 			}
 		} else if sliceElementType.Kind() == reflect.Struct {
 			pv := reflect.New(sliceElementType)
-			session.Statement.setRefValue(pv.Elem())
+			if err := session.Statement.setRefValue(pv.Elem()); err != nil {
+				return err
+			}
 		} else {
 			tp = tpNonStruct
 		}
@@ -234,7 +238,11 @@ func (session *Session) noCacheFind(table *core.Table, containerValue reflect.Va
 	if elemType.Kind() == reflect.Struct {
 		var newValue = newElemFunc(fields)
 		dataStruct := rValue(newValue.Interface())
-		return session.rows2Beans(rawRows, fields, len(fields), session.Engine.autoMapType(dataStruct), newElemFunc, containerValueSetFunc)
+		tb, err := session.Engine.autoMapType(dataStruct)
+		if err != nil {
+			return err
+		}
+		return session.rows2Beans(rawRows, fields, len(fields), tb, newElemFunc, containerValueSetFunc)
 	}
 
 	for rawRows.Next() {
@@ -407,7 +415,10 @@ func (session *Session) cacheFind(t reflect.Type, sqlStr string, rowsSlicePtr in
 			if rv.Kind() != reflect.Ptr {
 				rv = rv.Addr()
 			}
-			id := session.Engine.IdOfV(rv)
+			id, err := session.Engine.idOfV(rv)
+			if err != nil {
+				return err
+			}
 			sid, err := id.ToString()
 			if err != nil {
 				return err

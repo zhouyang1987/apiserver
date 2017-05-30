@@ -23,6 +23,10 @@
   - [灰度升级](#10.7)
   - [重新部署](#10.8)
   - [动态扩容](#10.9)
+  - [获取应用的pod](#10.10)
+  - [获取应用pod的事件](#10.11)
+  - [获取应用pod的cpu实用情况](#10.12)
+  - [获取应用pod的内存实用情况](#10.13)
 * **[docker-build组件模块](#11)**
   - [ 构建应用](#11.1)
 * **[registry组件模块](#12)**
@@ -449,6 +453,665 @@ Method: PUT
 }
 ```
 
+### <span id="10.10">获取应用的pod</span>
+
+获取应用的pod。
+
+URI: ApiURI/apps/deployment/pods?appName=test&namespace=huangjia
+
+**参数说明**：
+- appName：应用的名称
+- namespace：应用的namespace
+
+Method: GET
+
+**请求**
+- ApiURI/apps/deployment/pods?appName=test&namespace=huangjia
+
+```
+
+**响应**
+
+- HTTP Status: 200;
+- JSON:
+
+```text
+{
+  "apiversion": "v1",
+  "status": "200",
+  "data": [
+    {
+      "metadata": {
+        "name": "test-4240827775-7l8g1",
+        "generateName": "test-4240827775-",
+        "namespace": "huangjia",
+        "selfLink": "/api/v1/namespaces/huangjia/pods/test-4240827775-7l8g1",
+        "uid": "e5b0387f-449f-11e7-bc89-0800278ff542",
+        "resourceVersion": "27368",
+        "creationTimestamp": "2017-05-29T18:52:00Z",
+        "labels": {
+          "name": "test",
+          "pod-template-hash": "4240827775"
+        },
+        "annotations": {
+          "kubernetes.io/created-by": "{\"kind\":\"SerializedReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"ReplicaSet\",\"namespace\":\"huangjia\",\"name\":\"test-4240827775\",\"uid\":\"e5aa72c8-449f-11e7-bc89-0800278ff542\",\"apiVersion\":\"extensions\",\"resourceVersion\":\"27322\"}}\n",
+          "name": "test"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "extensions/v1beta1",
+            "kind": "ReplicaSet",
+            "name": "test-4240827775",
+            "uid": "e5aa72c8-449f-11e7-bc89-0800278ff542",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ]
+      },
+      "spec": {
+        "volumes": [
+          {
+            "name": "default-token-jn556",
+            "secret": {
+              "secretName": "default-token-jn556",
+              "defaultMode": 420
+            }
+          }
+        ],
+        "containers": [
+          {
+            "name": "test",
+            "image": "registry:latest",
+            "resources": {
+              "limits": {
+                "cpu": "128m",
+                "memory": "128Mi"
+              },
+              "requests": {
+                "cpu": "128m",
+                "memory": "128Mi"
+              }
+            },
+            "volumeMounts": [
+              {
+                "name": "default-token-jn556",
+                "readOnly": true,
+                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+              }
+            ],
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "imagePullPolicy": "IfNotPresent"
+          }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "serviceAccountName": "default",
+        "serviceAccount": "default",
+        "nodeName": "slave2",
+        "securityContext": {},
+        "schedulerName": "default-scheduler",
+        "tolerations": [
+          {
+            "key": "node.alpha.kubernetes.io/notReady",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          },
+          {
+            "key": "node.alpha.kubernetes.io/unreachable",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "conditions": [
+          {
+            "type": "Initialized",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2017-05-29T18:33:23Z"
+          },
+          {
+            "type": "Ready",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2017-05-29T18:33:38Z"
+          },
+          {
+            "type": "PodScheduled",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2017-05-29T18:52:00Z"
+          }
+        ],
+        "hostIP": "192.168.99.112",
+        "podIP": "10.244.2.33",
+        "startTime": "2017-05-29T18:33:23Z",
+        "containerStatuses": [
+          {
+            "name": "test",
+            "state": {
+              "running": {
+                "startedAt": "2017-05-29T18:33:37Z"
+              }
+            },
+            "lastState": {},
+            "ready": true,
+            "restartCount": 0,
+            "image": "docker.io/registry:latest",
+            "imageID": "docker-pullable://docker.io/registry@sha256:a3551c422521617e86927c3ff57e05edf086f1648f4d8524633216ca363d06c2",
+            "containerID": "docker://d83c025584ff1b4c3b30ae1d77465d040ed63bb14f748e27d5017118bd03ac20"
+          }
+        ],
+        "qosClass": "Guaranteed"
+      }
+    },
+    {
+      "metadata": {
+        "name": "test-4240827775-z8jpf",
+        "generateName": "test-4240827775-",
+        "namespace": "huangjia",
+        "selfLink": "/api/v1/namespaces/huangjia/pods/test-4240827775-z8jpf",
+        "uid": "e5b08d54-449f-11e7-bc89-0800278ff542",
+        "resourceVersion": "27364",
+        "creationTimestamp": "2017-05-29T18:52:00Z",
+        "labels": {
+          "name": "test",
+          "pod-template-hash": "4240827775"
+        },
+        "annotations": {
+          "kubernetes.io/created-by": "{\"kind\":\"SerializedReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"ReplicaSet\",\"namespace\":\"huangjia\",\"name\":\"test-4240827775\",\"uid\":\"e5aa72c8-449f-11e7-bc89-0800278ff542\",\"apiVersion\":\"extensions\",\"resourceVersion\":\"27322\"}}\n",
+          "name": "test"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "extensions/v1beta1",
+            "kind": "ReplicaSet",
+            "name": "test-4240827775",
+            "uid": "e5aa72c8-449f-11e7-bc89-0800278ff542",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ]
+      },
+      "spec": {
+        "volumes": [
+          {
+            "name": "default-token-jn556",
+            "secret": {
+              "secretName": "default-token-jn556",
+              "defaultMode": 420
+            }
+          }
+        ],
+        "containers": [
+          {
+            "name": "test",
+            "image": "registry:latest",
+            "resources": {
+              "limits": {
+                "cpu": "128m",
+                "memory": "128Mi"
+              },
+              "requests": {
+                "cpu": "128m",
+                "memory": "128Mi"
+              }
+            },
+            "volumeMounts": [
+              {
+                "name": "default-token-jn556",
+                "readOnly": true,
+                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+              }
+            ],
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "imagePullPolicy": "IfNotPresent"
+          }
+        ],
+        "restartPolicy": "Always",
+        "terminationGracePeriodSeconds": 30,
+        "dnsPolicy": "ClusterFirst",
+        "serviceAccountName": "default",
+        "serviceAccount": "default",
+        "nodeName": "slave2",
+        "securityContext": {},
+        "schedulerName": "default-scheduler",
+        "tolerations": [
+          {
+            "key": "node.alpha.kubernetes.io/notReady",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          },
+          {
+            "key": "node.alpha.kubernetes.io/unreachable",
+            "operator": "Exists",
+            "effect": "NoExecute",
+            "tolerationSeconds": 300
+          }
+        ]
+      },
+      "status": {
+        "phase": "Running",
+        "conditions": [
+          {
+            "type": "Initialized",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2017-05-29T18:33:23Z"
+          },
+          {
+            "type": "Ready",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2017-05-29T18:33:37Z"
+          },
+          {
+            "type": "PodScheduled",
+            "status": "True",
+            "lastProbeTime": null,
+            "lastTransitionTime": "2017-05-29T18:52:00Z"
+          }
+        ],
+        "hostIP": "192.168.99.112",
+        "podIP": "10.244.2.32",
+        "startTime": "2017-05-29T18:33:23Z",
+        "containerStatuses": [
+          {
+            "name": "test",
+            "state": {
+              "running": {
+                "startedAt": "2017-05-29T18:33:37Z"
+              }
+            },
+            "lastState": {},
+            "ready": true,
+            "restartCount": 0,
+            "image": "docker.io/registry:latest",
+            "imageID": "docker-pullable://docker.io/registry@sha256:a3551c422521617e86927c3ff57e05edf086f1648f4d8524633216ca363d06c2",
+            "containerID": "docker://6ba5de0602e1774211dfe44f9894fc5089b2f99e95c7a87a807396b4b13ba221"
+          }
+        ],
+        "qosClass": "Guaranteed"
+      }
+    }
+  ]
+}
+```
+
+### <span id="10.11">获取应用的pod事件</span>
+
+获取应用的pod事件。
+
+URI: ApiURI/apps/pods/events?podName=test-4240827775-7l8g1&namespace=huangjia
+
+**参数说明**：
+- podName：pod的name
+- namespace：pod的namespace
+
+Method: GET
+
+**请求**
+- ApiURI/apps/pods/events?podName=test-4240827775-7l8g1&namespace=huangjia
+
+```
+
+**响应**
+
+- HTTP Status: 200;
+- JSON:
+
+```text
+{
+  "apiversion": "v1",
+  "status": "200",
+  "data": [
+    {
+      "metadata": {
+        "name": "test-4240827775-7l8g1.14c32763893b979e",
+        "namespace": "huangjia",
+        "selfLink": "/api/v1/namespaces/huangjia/events/test-4240827775-7l8g1.14c32763893b979e",
+        "uid": "e9bb6aa7-449f-11e7-bc89-0800278ff542",
+        "resourceVersion": "27350",
+        "creationTimestamp": "2017-05-29T18:52:06Z"
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "huangjia",
+        "name": "test-4240827775-7l8g1",
+        "uid": "e5b0387f-449f-11e7-bc89-0800278ff542",
+        "apiVersion": "v1",
+        "resourceVersion": "27329",
+        "fieldPath": "spec.containers{test}"
+      },
+      "reason": "Pulled",
+      "message": "Container image \"registry:latest\" already present on machine",
+      "source": {
+        "component": "kubelet",
+        "host": "slave2"
+      },
+      "firstTimestamp": "2017-05-29T18:33:29Z",
+      "lastTimestamp": "2017-05-29T18:33:29Z",
+      "count": 1,
+      "type": "Normal"
+    },
+    {
+      "metadata": {
+        "name": "test-4240827775-7l8g1.14c327639280b342",
+        "namespace": "huangjia",
+        "selfLink": "/api/v1/namespaces/huangjia/events/test-4240827775-7l8g1.14c327639280b342",
+        "uid": "e9d316a5-449f-11e7-bc89-0800278ff542",
+        "resourceVersion": "27352",
+        "creationTimestamp": "2017-05-29T18:52:07Z"
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "huangjia",
+        "name": "test-4240827775-7l8g1",
+        "uid": "e5b0387f-449f-11e7-bc89-0800278ff542",
+        "apiVersion": "v1",
+        "resourceVersion": "27329",
+        "fieldPath": "spec.containers{test}"
+      },
+      "reason": "Created",
+      "message": "Created container with id d83c025584ff1b4c3b30ae1d77465d040ed63bb14f748e27d5017118bd03ac20",
+      "source": {
+        "component": "kubelet",
+        "host": "slave2"
+      },
+      "firstTimestamp": "2017-05-29T18:33:29Z",
+      "lastTimestamp": "2017-05-29T18:33:29Z",
+      "count": 1,
+      "type": "Normal"
+    },
+    {
+      "metadata": {
+        "name": "test-4240827775-7l8g1.14c32765602e94d4",
+        "namespace": "huangjia",
+        "selfLink": "/api/v1/namespaces/huangjia/events/test-4240827775-7l8g1.14c32765602e94d4",
+        "uid": "ee710667-449f-11e7-bc89-0800278ff542",
+        "resourceVersion": "27363",
+        "creationTimestamp": "2017-05-29T18:52:14Z"
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "huangjia",
+        "name": "test-4240827775-7l8g1",
+        "uid": "e5b0387f-449f-11e7-bc89-0800278ff542",
+        "apiVersion": "v1",
+        "resourceVersion": "27329",
+        "fieldPath": "spec.containers{test}"
+      },
+      "reason": "Started",
+      "message": "Started container with id d83c025584ff1b4c3b30ae1d77465d040ed63bb14f748e27d5017118bd03ac20",
+      "source": {
+        "component": "kubelet",
+        "host": "slave2"
+      },
+      "firstTimestamp": "2017-05-29T18:33:37Z",
+      "lastTimestamp": "2017-05-29T18:33:37Z",
+      "count": 1,
+      "type": "Normal"
+    },
+    {
+      "metadata": {
+        "name": "test-4240827775-7l8g1.14c328662114d2ab",
+        "namespace": "huangjia",
+        "selfLink": "/api/v1/namespaces/huangjia/events/test-4240827775-7l8g1.14c328662114d2ab",
+        "uid": "e5c72e7e-449f-11e7-bc89-0800278ff542",
+        "resourceVersion": "27339",
+        "creationTimestamp": "2017-05-29T18:52:00Z"
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "huangjia",
+        "name": "test-4240827775-7l8g1",
+        "uid": "e5b0387f-449f-11e7-bc89-0800278ff542",
+        "apiVersion": "v1",
+        "resourceVersion": "27327"
+      },
+      "reason": "Scheduled",
+      "message": "Successfully assigned test-4240827775-7l8g1 to slave2",
+      "source": {
+        "component": "default-scheduler"
+      },
+      "firstTimestamp": "2017-05-29T18:52:00Z",
+      "lastTimestamp": "2017-05-29T18:52:00Z",
+      "count": 1,
+      "type": "Normal"
+    }
+  ]
+}
+
+```
+pod 指标：
+
+```
+[
+  "memory/major_page_faults_rate",
+  "network/rx_errors_rate",
+  "cpu/usage",
+  "network/rx_rate",
+  "memory/cache",
+  "network/tx_errors",
+  "uptime",
+  "cpu/limit",
+  "network/rx_errors",
+  "memory/request",
+  "memory/page_faults_rate",
+  "cpu/request",
+  "memory/major_page_faults",
+  "cpu/usage_rate",
+  "network/tx_errors_rate",
+  "memory/usage",
+  "memory/limit",
+  "network/rx",
+  "network/tx",
+  "memory/working_set",
+  "memory/page_faults",
+  "network/tx_rate",
+  "memory/rss"
+]
+```
+
+
+### <span id="10.12">获取应用的pod的cpu使用情况</span>
+
+获取应用的pod的cpu使用情况
+
+URI: ApiURI/api/v1/apps/pods/metrics?podName=test-4240827775-1phdj&namespace=huangjia&metricName=cpu/usage
+
+**参数说明**：
+- podName：pod的name
+- namespace：pod的namespace
+- metricName：指标名称
+
+Method: GET
+
+**请求**
+- ApiURI/api/v1/apps/pods/metrics?podName=test-4240827775-1phdj&namespace=huangjia&metricName=cpu/usage
+
+```
+
+**响应**
+
+- HTTP Status: 200;
+- JSON:
+
+```text
+
+{
+  "apiversion": "v1",
+  "status": "200",
+  "data": {
+    "latestTimestamp": "2017-05-29T23:12:00Z",
+    "metrics": [
+      {
+        "timestamp": "2017-05-29T23:10:00Z",
+        "value": 0
+      },
+      {
+        "timestamp": "2017-05-29T23:11:00Z",
+        "value": 0
+      },
+      {
+        "timestamp": "2017-05-29T23:12:00Z",
+        "value": 0
+      }
+    ]
+  }
+}
+```
+
+### <span id="10.13">获取应用的pod的内存使用情况</span>
+
+获取应用的pod的内存使用情况
+
+URI: ApiURI/api/v1/apps/pods/metrics?podName=test-4240827775-1phdj&namespace=huangjia&metricName=memory/usage
+
+**参数说明**：
+- podName：pod的name
+- namespace：pod的namespace
+- metricName：指标名称
+
+Method: GET
+
+**请求**
+- ApiURI/api/v1/apps/pods/metrics?podName=test-4240827775-1phdj&namespace=huangjia&metricName=memory/usage
+
+```
+
+**响应**
+
+- HTTP Status: 200;
+- JSON:
+
+```text
+{
+  "apiversion": "v1",
+  "status": "200",
+  "data": {
+    "latestTimestamp": "2017-05-29T23:13:00Z",
+    "metrics": [
+      {
+        "timestamp": "2017-05-29T22:59:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:00:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:01:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:02:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:03:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:04:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:05:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:06:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:07:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:08:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:09:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:10:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:11:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:12:00Z",
+        "value": 16371712
+      },
+      {
+        "timestamp": "2017-05-29T23:13:00Z",
+        "value": 16371712
+      }
+    ]
+  }
+}
+```
+
+### <span id="10.14">获取应用的pod的网络使用情况</span>
+
+获取应用的pod的网络使用情况
+
+URI: ApiURI/api/v1/apps/pods/metrics?podName=test-4240827775-1phdj&namespace=huangjia&metricName=network/rx_rate
+
+**参数说明**：
+- podName：pod的name
+- namespace：pod的namespace
+- metricName：指标名称
+
+Method: GET
+
+**请求**
+- ApiURI/api/v1/apps/pods/metrics?podName=test-4240827775-1phdj&namespace=huangjia&metricName=network/rx_rate
+
+```
+
+**响应**
+
+- HTTP Status: 200;
+- JSON:
+
+```text
+{
+  "apiversion": "v1",
+  "status": "200",
+  "data": {
+    "latestTimestamp": "2017-05-29T23:18:00Z",
+    "metrics": [
+      {
+        "timestamp": "2017-05-29T23:16:00Z",
+        "value": 0
+      },
+      {
+        "timestamp": "2017-05-29T23:17:00Z",
+        "value": 0
+      },
+      {
+        "timestamp": "2017-05-29T23:18:00Z",
+        "value": 0
+      }
+    ]
+  }
+}
+```
+
 - docker-build组件api
 
 ## <span id="11">docker-build组件模块</span>
@@ -675,3 +1338,6 @@ images:镜像列表
 -- nmae:镜像名称
 -- tagLen:镜像版本个数
 -- manifest:镜像的详细信息
+
+
+

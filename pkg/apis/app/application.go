@@ -26,7 +26,10 @@ import (
 	"apiserver/pkg/util/parseUtil"
 
 	res "k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/pkg/api/v1"
+
+	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	"github.com/gorilla/mux"
 )
@@ -45,6 +48,11 @@ func Register(rout *mux.Router) {
 	r.RegisterHttpHandler(rout, "/apps/rollupdate", "POST", RollingUpdateApplication)
 	r.RegisterHttpHandler(rout, "/apps/rollupdate", "OPTIONS", Option)
 	// r.RegisterHttpHandler(rout, "/apps/redeploy", "POST", RollingApplication)
+
+	r.RegisterHttpHandler(rout, "/apps/containers", "GET", GetContainers)
+	r.RegisterHttpHandler(rout, "/apps/deployment/pods", "GET", GetPods)
+	r.RegisterHttpHandler(rout, "/apps/pods/events", "GET", GetPodEvents)
+	r.RegisterHttpHandler(rout, "/apps/pods/metrics", "GET", GetPodMetrics)
 }
 
 func GetApplication(request *http.Request) (string, interface{}) {
@@ -97,9 +105,18 @@ func CreateApplication(request *http.Request) (string, interface{}) {
 	}
 
 	//create replicationControllers, first query the svc is exsit or not, if not exsit, create it
-	rc := resource.NewRC(app)
+	/*rc := resource.NewRC(app)
 	if !resource.ExsitResource(rc) {
 		err := resource.CreateResource(rc)
+		if err != nil {
+			return r.StatusInternalServerError, err
+		}
+	} else {
+		return r.StatusForbidden, "the application of named " + app.Name + " is already exsit"
+	}*/
+	deployment := resource.NewDeployment(app)
+	if !resource.ExsitResource(deployment) {
+		err := resource.CreateResource(deployment)
 		if err != nil {
 			return r.StatusInternalServerError, err
 		}
@@ -121,7 +138,7 @@ func DeleteApplication(request *http.Request) (string, interface{}) {
 	}
 	appName := app.Name
 	namespace := app.UserName
-	rc, exsit := sync.ListReplicationController[namespace][appName]
+	rc, exsit := sync.ListDeployment[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
@@ -152,7 +169,7 @@ func StopApplication(request *http.Request) (string, interface{}) {
 	}
 	appName := app.Name
 	namespace := app.UserName
-	rc, exsit := sync.ListReplicationController[namespace][appName]
+	rc, exsit := sync.ListDeployment[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
@@ -178,7 +195,7 @@ func StartApplication(request *http.Request) (string, interface{}) {
 	}
 	appName := app.Name
 	namespace := app.UserName
-	rc, exsit := sync.ListReplicationController[namespace][appName]
+	rc, exsit := sync.ListDeployment[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
@@ -210,7 +227,7 @@ func ScaleApplication(request *http.Request) (string, interface{}) {
 	appName := app.Name
 	app_cnt := app.InstanceCount
 	namespace := app.UserName
-	rc, exsit := sync.ListReplicationController[namespace][appName]
+	rc, exsit := sync.ListDeployment[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
@@ -237,12 +254,21 @@ func RollingUpdateApplication(request *http.Request) (string, interface{}) {
 	namespace := app.UserName
 	image := app.Image
 	// period := request.FormValue("period")
-	rc, exsit := sync.ListReplicationController[namespace][appName]
+	var de extensions.Deployment
+	deploy, exsit := sync.ListDeployment[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
-	rc.Spec.Template.Spec.Containers[0].Image = image
-	if err := resource.UpdateResouce(&rc); err != nil {
+	deploy.Spec.Template.Spec.Containers[0].Image = image
+	de.Spec.Strategy = extensions.DeploymentStrategy{
+		Type: extensions.RollingUpdateDeploymentStrategyType,
+		RollingUpdate: &extensions.RollingUpdateDeployment{
+			MaxUnavailable: &intstr.IntOrString{Type: intstr.String, StrVal: "20%"},
+			MaxSurge:       &intstr.IntOrString{Type: intstr.String, StrVal: "120%"},
+		},
+	}
+
+	if err := resource.UpdateResouce(&deploy); err != nil {
 		return r.StatusInternalServerError, "rolling updte application named " + appName + ` failed`
 	}
 	if err := app.Update(); err != nil {
@@ -262,7 +288,7 @@ func ReDeployApplication(request *http.Request) (string, interface{}) {
 	}
 	appName := app.Name
 	namespace := app.UserName
-	rc, exsit := sync.ListReplicationController[namespace][appName]
+	rc, exsit := sync.ListDeployment[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
@@ -288,7 +314,7 @@ func ExpansionApplication(request *http.Request) (string, interface{}) {
 	namespace := app.UserName
 	cpu := app.Cpu
 	memory := app.Memory
-	rc, exsit := sync.ListReplicationController[namespace][appName]
+	rc, exsit := sync.ListDeployment[namespace][appName]
 	if !exsit {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
@@ -309,4 +335,51 @@ func ExpansionApplication(request *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, "Expansion application named " + appName + " failed:" + err.Error()
 	}
 	return r.StatusCreated, "Expansion application named " + appName + " successed"
+}
+
+func GetContainers(request *http.Request) (string, interface{}) {
+	log.Debugf("containers is %v", "我是黄佳")
+	appName := "test"
+	namespace := "huangjia"
+	rc, exsit := sync.ListDeployment[namespace][appName]
+	if !exsit {
+		return r.StatusNotFound, "application named " + appName + ` does't exist`
+	}
+	log.Debugf("rc == %#v", rc.Spec.Template.Spec.Containers)
+	return r.StatusOK, rc.Spec.Template.Spec.Containers
+}
+
+func GetPods(request *http.Request) (string, interface{}) {
+	appName := request.FormValue("appName")
+	namespace := request.FormValue("namespace")
+	_, exsit := sync.ListDeployment[namespace][appName]
+	if !exsit {
+		return r.StatusNotFound, "application named " + appName + ` does't exist`
+	}
+	listPod, err := resource.GetDeploymentPods(appName, namespace)
+	if err != nil {
+		return r.StatusInternalServerError, err
+	}
+	return r.StatusOK, listPod
+}
+
+func GetPodEvents(request *http.Request) (string, interface{}) {
+	podName := request.FormValue("podName")
+	namespace := request.FormValue("namespace")
+	listEvent, err := resource.GetEventsForPod(namespace, podName)
+	if err != nil {
+		return r.StatusInternalServerError, err
+	}
+	return r.StatusOK, listEvent
+}
+
+func GetPodMetrics(request *http.Request) (string, interface{}) {
+	podName := request.FormValue("podName")
+	namespace := request.FormValue("namespace")
+	metricName := request.FormValue("metricName")
+	res, err := resource.GetPodMetrics(namespace, podName, metricName)
+	if err != nil {
+		return r.StatusInternalServerError, err
+	}
+	return r.StatusOK, res
 }

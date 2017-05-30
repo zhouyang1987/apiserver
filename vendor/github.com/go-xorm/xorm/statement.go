@@ -195,21 +195,26 @@ func (statement *Statement) Or(query interface{}, args ...interface{}) *Statemen
 
 // In generate "Where column IN (?) " statement
 func (statement *Statement) In(column string, args ...interface{}) *Statement {
-	in := builder.In(column, args...)
+	in := builder.In(statement.Engine.Quote(column), args...)
 	statement.cond = statement.cond.And(in)
 	return statement
 }
 
 // NotIn generate "Where column NOT IN (?) " statement
 func (statement *Statement) NotIn(column string, args ...interface{}) *Statement {
-	notIn := builder.NotIn(column, args...)
+	notIn := builder.NotIn(statement.Engine.Quote(column), args...)
 	statement.cond = statement.cond.And(notIn)
 	return statement
 }
 
-func (statement *Statement) setRefValue(v reflect.Value) {
-	statement.RefTable = statement.Engine.autoMapType(reflect.Indirect(v))
+func (statement *Statement) setRefValue(v reflect.Value) error {
+	var err error
+	statement.RefTable, err = statement.Engine.autoMapType(reflect.Indirect(v))
+	if err != nil {
+		return err
+	}
 	statement.tableName = statement.Engine.tbName(v)
+	return nil
 }
 
 // Table tempororily set table name, the parameter could be a string or a pointer of struct
@@ -219,7 +224,12 @@ func (statement *Statement) Table(tableNameOrBean interface{}) *Statement {
 	if t.Kind() == reflect.String {
 		statement.AltTableName = tableNameOrBean.(string)
 	} else if t.Kind() == reflect.Struct {
-		statement.RefTable = statement.Engine.autoMapType(v)
+		var err error
+		statement.RefTable, err = statement.Engine.autoMapType(v)
+		if err != nil {
+			statement.Engine.logger.Error(err)
+			return statement
+		}
 		statement.AltTableName = statement.Engine.tbName(v)
 	}
 	return statement
@@ -410,7 +420,11 @@ func buildUpdates(engine *Engine, table *core.Table, bean interface{},
 				if fieldValue == reflect.Zero(fieldType) {
 					continue
 				}
-				if fieldValue.IsNil() || !fieldValue.IsValid() || fieldValue.Len() == 0 {
+				if fieldType.Kind() == reflect.Array {
+					if isArrayValueZero(fieldValue) {
+						continue
+					}
+				} else if fieldValue.IsNil() || !fieldValue.IsValid() || fieldValue.Len() == 0 {
 					continue
 				}
 			}
@@ -425,13 +439,16 @@ func buildUpdates(engine *Engine, table *core.Table, bean interface{},
 			} else if col.SQLType.IsBlob() {
 				var bytes []byte
 				var err error
-				if (fieldType.Kind() == reflect.Array || fieldType.Kind() == reflect.Slice) &&
+				if fieldType.Kind() == reflect.Slice &&
 					fieldType.Elem().Kind() == reflect.Uint8 {
 					if fieldValue.Len() > 0 {
 						val = fieldValue.Bytes()
 					} else {
 						continue
 					}
+				} else if fieldType.Kind() == reflect.Array &&
+					fieldType.Elem().Kind() == reflect.Uint8 {
+					val = fieldValue.Slice(0, 0).Interface()
 				} else {
 					bytes, err = json.Marshal(fieldValue.Interface())
 					if err != nil {
@@ -643,7 +660,9 @@ func buildConds(engine *Engine, table *core.Table, bean interface{},
 					}
 				}
 			}
-		case reflect.Array, reflect.Slice, reflect.Map:
+		case reflect.Array:
+			continue
+		case reflect.Slice, reflect.Map:
 			if fieldValue == reflect.Zero(fieldType) {
 				continue
 			}
@@ -1105,7 +1124,11 @@ func (statement *Statement) genConds(bean interface{}) (string, []interface{}, e
 }
 
 func (statement *Statement) genGetSQL(bean interface{}) (string, []interface{}) {
-	statement.setRefValue(rValue(bean))
+	v := rValue(bean)
+	isStruct := v.Kind() == reflect.Struct
+	if isStruct {
+		statement.setRefValue(v)
+	}
 
 	var columnStr = statement.ColumnStr
 	if len(statement.selectStr) > 0 {
@@ -1124,14 +1147,22 @@ func (statement *Statement) genGetSQL(bean interface{}) (string, []interface{}) 
 			if len(columnStr) == 0 {
 				if len(statement.GroupByStr) > 0 {
 					columnStr = statement.Engine.Quote(strings.Replace(statement.GroupByStr, ",", statement.Engine.Quote(","), -1))
-				} else {
-					columnStr = "*"
 				}
 			}
 		}
 	}
 
-	condSQL, condArgs, _ := statement.genConds(bean)
+	if len(columnStr) == 0 {
+		columnStr = "*"
+	}
+
+	var condSQL string
+	var condArgs []interface{}
+	if isStruct {
+		condSQL, condArgs, _ = statement.genConds(bean)
+	} else {
+		condSQL, condArgs, _ = builder.ToSQL(statement.cond)
+	}
 
 	return statement.genSelectSQL(columnStr, condSQL), append(statement.joinArgs, condArgs...)
 }
@@ -1157,17 +1188,21 @@ func (statement *Statement) genSumSQL(bean interface{}, columns ...string) (stri
 
 	var sumStrs = make([]string, 0, len(columns))
 	for _, colName := range columns {
+		if !strings.Contains(colName, " ") && !strings.Contains(colName, "(") {
+			colName = statement.Engine.Quote(colName)
+		}
 		sumStrs = append(sumStrs, fmt.Sprintf("COALESCE(sum(%s),0)", colName))
 	}
+	sumSelect := strings.Join(sumStrs, ", ")
 
 	condSQL, condArgs, _ := statement.genConds(bean)
 
-	return statement.genSelectSQL(strings.Join(sumStrs, ", "), condSQL), append(statement.joinArgs, condArgs...)
+	return statement.genSelectSQL(sumSelect, condSQL), append(statement.joinArgs, condArgs...)
 }
 
 func (statement *Statement) genSelectSQL(columnStr, condSQL string) (a string) {
 	var distinct string
-	if statement.IsDistinct {
+	if statement.IsDistinct && !strings.HasPrefix(columnStr, "count") {
 		distinct = "DISTINCT "
 	}
 
@@ -1183,8 +1218,14 @@ func (statement *Statement) genSelectSQL(columnStr, condSQL string) (a string) {
 		fmt.Fprintf(&buf, " WHERE %v", condSQL)
 	}
 	var whereStr = buf.String()
+	var fromStr = " FROM "
 
-	var fromStr = " FROM " + quote(statement.TableName())
+	if dialect.DBType() == core.MSSQL && strings.Contains(statement.TableName(), "..") {
+		fromStr += statement.TableName()
+	} else {
+		fromStr += quote(statement.TableName())
+	}
+
 	if statement.TableAlias != "" {
 		if dialect.DBType() == core.ORACLE {
 			fromStr += " " + quote(statement.TableAlias)

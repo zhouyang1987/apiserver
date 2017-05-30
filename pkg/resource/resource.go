@@ -26,8 +26,16 @@ import (
 	"k8s.io/client-go/pkg/api/v1"
 	// metav1 "k8s.io/client-go/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
+
+var listEverything = metav1.ListOptions{
+	LabelSelector: labels.Everything().String(),
+	FieldSelector: fields.Everything().String(),
+}
 
 //newTypeMeta create k8s's TypeMeta
 func newTypeMeta(kind, vereion string) metav1.TypeMeta {
@@ -40,32 +48,33 @@ func newTypeMeta(kind, vereion string) metav1.TypeMeta {
 //newOjectMeta create k8s's ObjectMeta
 func newOjectMeta(app *application.App) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
-		Name:      app.Name,
-		Namespace: app.UserName,
-		Labels:    map[string]string{"name": app.Name},
+		Name:        app.Name,
+		Namespace:   app.UserName,
+		Labels:      map[string]string{"name": app.Name},
+		Annotations: map[string]string{"name": app.Name},
 	}
 }
 
 //newPodSpec create k8s's PodSpec
 func newPodSpec(app *application.App) v1.PodSpec {
-	var containerPorts []v1.ContainerPort
+	/*var containerPorts []v1.ContainerPort
 	if app.Ports != nil {
 		for _, port := range app.Ports {
 			containerPorts = append(containerPorts, v1.ContainerPort{
-				HostPort:      int32(port.TargetPort),
+				HostPort:      int32(port.ServicePort),
 				ContainerPort: int32(port.TargetPort),
 				Protocol:      v1.Protocol(port.Schame),
 			})
 		}
-	}
+	}*/
 	return v1.PodSpec{
 		RestartPolicy: v1.RestartPolicyAlways,
 		Containers: []v1.Container{
 			v1.Container{
-				Name:            app.Name,
-				Image:           app.Image,
-				Command:         app.Command,
-				Ports:           containerPorts,
+				Name:    app.Name,
+				Image:   app.Image,
+				Command: app.Command,
+				// Ports:           containerPorts,
 				ImagePullPolicy: v1.PullIfNotPresent,
 				Resources: v1.ResourceRequirements{
 					Limits: v1.ResourceList{
@@ -77,14 +86,14 @@ func newPodSpec(app *application.App) v1.PodSpec {
 						v1.ResourceMemory: resource.MustParse(app.Memory),
 					},
 				},
-				VolumeMounts: []v1.VolumeMount{
-				/*	v1.VolumeMount{
-					Name:      app.Mount.Name,
-					MountPath: app.Mount.MountPath,
-					SubPath:   app.Mount.SubPath,
-					ReadOnly:  app.Mount.ReadOnly,
+				/*VolumeMounts: []v1.VolumeMount{
+					v1.VolumeMount{
+						Name:      app.Mount.Name,
+						MountPath: app.Mount.MountPath,
+						SubPath:   app.Mount.SubPath,
+						ReadOnly:  app.Mount.ReadOnly,
+					},
 				},*/
-				},
 			},
 		},
 	}
@@ -158,6 +167,26 @@ func NewRC(app *application.App) *v1.ReplicationController {
 	}
 }
 
+func NewDeployment(app *application.App) *extensions.Deployment {
+	return &extensions.Deployment{
+		TypeMeta:   newTypeMeta("Deployment", "extensions/v1beta1"),
+		ObjectMeta: newOjectMeta(app),
+		Spec: extensions.DeploymentSpec{
+			Replicas: parseUtil.IntToInt32Pointer(app.InstanceCount),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"name": app.Name},
+			},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: newOjectMeta(app),
+				Spec:       newPodSpec(app),
+			},
+			Strategy: extensions.DeploymentStrategy{
+				Type: extensions.RecreateDeploymentStrategyType,
+			},
+		},
+	}
+}
+
 //NewNS create k8s's resource Namespace
 func NewNS(app *application.App) *v1.Namespace {
 	temApp := new(application.App)
@@ -209,7 +238,17 @@ func CreateResource(param interface{}) error {
 		}
 		log.Noticef("replication [%v] is created]", rc.Name)
 		return nil
+	case *extensions.Deployment:
+		deploy := param.(*extensions.Deployment)
+		_, err := client.K8sClient.ExtensionsV1beta1().Deployments(deploy.Namespace).Create(deploy)
+		if err != nil {
+			log.Errorf("create deployment [%v] err:%v", deploy.Name, err)
+			return err
+		}
+		log.Noticef("deployment [%v] is created]", deploy.Name)
+		return nil
 	}
+
 	return nil
 }
 
@@ -241,6 +280,16 @@ func ExsitResource(param interface{}) bool {
 			CoreV1().
 			ReplicationControllers(rc.Namespace).
 			Get(rc.Name, metav1.GetOptions{})
+		if err != nil {
+			return false
+		}
+		return true
+	case *extensions.Deployment:
+		deploy := param.(*extensions.Deployment)
+		_, err := client.K8sClient.
+			ExtensionsV1beta1().
+			Deployments(deploy.Namespace).
+			Get(deploy.Name, metav1.GetOptions{})
 		if err != nil {
 			return false
 		}
@@ -300,6 +349,18 @@ func DeleteResource(param interface{}) error {
 			return err
 		}*/
 		return nil
+	case *extensions.Deployment:
+		deploy := param.(*extensions.Deployment)
+		err := client.K8sClient.
+			ExtensionsV1beta1().
+			Deployments(deploy.Namespace).
+			Delete(deploy.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			log.Errorf("delete deployment [%v] err:%v", deploy.Name, err)
+			return err
+		}
+		log.Noticef("deployment [%v] was deleted]", deploy.Name)
+		return nil
 	}
 	return nil
 }
@@ -313,28 +374,30 @@ func WatchPodStatus(app *application.App) {
 		for {
 			select {
 			case event := <-eventChan:
-				if event.Object.(*v1.Pod).Status.Phase == v1.PodRunning {
-					app.Status = application.AppRunning
-				}
-				if event.Object.(*v1.Pod).Status.Phase == v1.PodSucceeded {
-					app.Status = application.AppSuccessed
-				}
-				if event.Object.(*v1.Pod).Status.Phase == v1.PodPending {
-					app.Status = application.AppBuilding
-				}
-				if event.Object.(*v1.Pod).Status.Phase == v1.PodFailed {
-					app.Status = application.AppFailed
-				}
-				if event.Object.(*v1.Pod).Status.Phase == v1.PodUnknown {
-					app.Status = application.AppUnknow
-				}
-				if err := app.Update(); err != nil {
-					log.Errorf("update application's status to %s err:%v", application.Status[app.Status], err)
+				if event.Object != nil {
+					if event.Object.(*v1.Pod).Status.Phase == v1.PodRunning {
+						app.Status = application.AppRunning
+					}
+					if event.Object.(*v1.Pod).Status.Phase == v1.PodSucceeded {
+						app.Status = application.AppSuccessed
+					}
+					if event.Object.(*v1.Pod).Status.Phase == v1.PodPending {
+						app.Status = application.AppBuilding
+					}
+					if event.Object.(*v1.Pod).Status.Phase == v1.PodFailed {
+						app.Status = application.AppFailed
+					}
+					if event.Object.(*v1.Pod).Status.Phase == v1.PodUnknown {
+						app.Status = application.AppUnknow
+					}
+					if err := app.Update(); err != nil {
+						log.Errorf("update application's status to %s err:%v", application.Status[app.Status], err)
 
-					continue
-				} else {
-					if app.Status == application.AppRunning {
-						break
+						continue
+					} else {
+						if app.Status == application.AppRunning {
+							break
+						}
 					}
 				}
 			}
@@ -381,6 +444,42 @@ func UpdateResouce(param interface{}) error {
 		}
 		log.Noticef("replication [%v] is updated]", rc.Name)
 		return nil
+
+	case *extensions.Deployment:
+		deploy := param.(*extensions.Deployment)
+		_, err := client.K8sClient.
+			ExtensionsV1beta1().
+			Deployments(deploy.Namespace).Update(deploy)
+		if err != nil {
+			log.Errorf("update replicationControllers [%v] err:%v", deploy.Name, err)
+			return err
+		}
+		log.Noticef("replication [%v] is updated]", deploy.Name)
+		return nil
 	}
 	return nil
+}
+
+func GetDeploymentPods(appName, namespace string) ([]v1.Pod, error) {
+	list, err := client.K8sClient.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: "name=" + appName})
+	if err != nil {
+		log.Errorf("get deployment [%v]'s pods err:%v", appName, err)
+		return nil, err
+	}
+	log.Debugf("%v", list)
+	return list.Items, nil
+}
+
+func GetEventsForPod(namespace, podName string) (list []v1.Event, err error) {
+	listEvent, err := client.K8sClient.CoreV1().Events(namespace).List(listEverything)
+	if err != nil {
+		log.Errorf("get pod [%v]'s event err:%v", podName, err)
+		return
+	}
+	for _, event := range listEvent.Items {
+		if event.InvolvedObject.Name == podName {
+			list = append(list, event)
+		}
+	}
+	return
 }

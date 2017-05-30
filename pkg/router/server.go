@@ -88,11 +88,11 @@ func RegisterHttpHandler(router *mux.Router, path, method string, handler HttpHa
 		}
 
 		dump := dumpHttpRequest(r)
-		log.Debug(dump)
+		log.Debug(fmt.Sprintf("incoming %s %s request from %v", r.Method, r.URL.RequestURI(), r.Host))
 
 		t := time.Now()
 		status, body := handler(r)
-		writeHttpResp(w, dump, status, body, t)
+		writeHttpResp(w, dump, r.Host, status, body, t)
 	}
 	router.HandleFunc(path, h).Methods(method)
 }
@@ -127,7 +127,7 @@ type httpRes struct {
 	Data       interface{} `json:"data,omitempty"`
 }
 
-func writeHttpResp(w http.ResponseWriter, dump string, status string, body interface{}, t time.Time) {
+func writeHttpResp(w http.ResponseWriter, dump, host string, status string, body interface{}, t time.Time) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
@@ -177,6 +177,6 @@ func writeHttpResp(w http.ResponseWriter, dump string, status string, body inter
 	}
 
 	resdate, _ := json.MarshalIndent(res, " ", "    ")
-	log.Debug(dump, status, sub)
+	log.Debug("outcoming response to ", host, dump, status, sub)
 	io.WriteString(w, string(resdate))
 }

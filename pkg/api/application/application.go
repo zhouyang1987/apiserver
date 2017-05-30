@@ -68,8 +68,8 @@ type App struct {
 	CreateAt      time.Time         `json:"create_at" xorm:"created"`
 	ReviseAt      time.Time         `json:"revise_at" xorm:"updated"`
 	Url           string            `json:"url" xorm:"varchar(1024)"`
-	// Mount         VolumeMount       `json:"mount" xorm:"varchar(1024)"`
-	// Volume        []string          `json:"volume" xorm:"varchar(1024)"`
+	// Mount         VolumeMount       `json:"mount" xorm:"_"`
+	// Volume []string `json:"volume" xorm:"varchar(1024)"`
 }
 
 type VolumeMount struct {
