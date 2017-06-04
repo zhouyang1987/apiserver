@@ -5,100 +5,117 @@ import (
 )
 
 type App struct {
-	Name          string    `json:"nmae,omitempty" xorm:"pk index(app_index)"`
-	UserName      string    `json:"nameSpace,omitempty" xorm:"pk index(app_index)"`
-	CreateTime    time.Time `json:"create_time,omitempty" xorm:"created"`
-	Description   string    `json:"description,omitempty" xorm:"varchar(255)"`
-	AppStatus     int       `json:"appStatus,omitempty" xorm:"int(1) default 0"`
-	ServiceCount  int       `json:"serviceCount,omitempty" xorm:"int not null"`
-	InstanceCount int       `json:"intanceCount,omitempty" xorm:"int "`
-	External      string    `json:"external,omitempty" xorm:"varchar(255)"`
-	Items         []Service `json:"services,omitempty" xorm:"_"`
+	ID            uint       `json:"id"`
+	CreatedAt     time.Time  `json:"createAt"`
+	Name          string     `json:"nmae,omitempty"`
+	UserName      string     `json:"nameSpace,omitempty"`
+	Description   string     `json:"description,omitempty"`
+	AppStatus     int        `json:"appStatus,omitempty"`
+	ServiceCount  int        `json:"serviceCount,omitempty"`
+	InstanceCount int        `json:"intanceCount,omitempty"`
+	External      string     `json:"external,omitempty"`
+	Items         []*Service `json:"services,omitempty"`
 }
 
 type Service struct {
-	Name          string         `json:"name,omitempty" xorm:"pk index(service_index)"`
-	AppName       string         `json:"appName,omitempty" xorm:"pk index(service_index)"`
-	UserName      string         `json:"nameSpace,omitempty" xorm:"pk index(app_index)"`
-	Image         string         `json:"image,omitempty" xorm:"varchar(255) not null"`
-	InstanceCount int            `json:"instanceCount,omitempty" xorm:"int"`
-	Status        int            `json:"status,omitempty" xorm:"int(1)" default 0`
-	CreateTime    time.Time      `json:"createTime,omitempty" xorm:"created"`
-	Items         []Container    `json:"cantainers,omitempty" xorm:"_"`
-	Config        *ServiceConfig `json:"config,omitempty" xorm:"_"`
-	LoadbalanceIp string         `json:"loadbalanceIp,omitempty" xorm:"varchar(255)"`
-}
-
-type Container struct {
-	Name        string         `json:"name,omitempty" xorm:"pk index(container_index)"`
-	Image       string         `json:"image,omitempty" xorm:"varchar(255)"`
-	ServiceName string         `json:"serviceName,omitempty" xorm:"pk index(container_index)"`
-	Status      int            `json:"status,omitempty" xorm:"int(1) default 0"`
-	internal    string         `json:"internal,omitempty" xorm:"varchar(255)"`
-	Config      *ServiceConfig `json:"conifg,omitempty" xorm:"_"`
+	ID            uint           `json:"id"`
+	CreatedAt     time.Time      `json:"createAt"`
+	Name          string         `json:"name,omitempty"`
+	Image         string         `json:"image,omitempty"`
+	InstanceCount int            `json:"instanceCount,omitempty" `
+	Status        int            `json:"status,omitempty"`
+	External      string         `json:"external,omitempty"`
+	LoadbalanceIp string         `json:"loadbalanceIp,omitempty"`
+	Config        *ServiceConfig `json:"config,omitempty`
+	Items         []*Container   `json:"containers,omitempty"`
+	AppId         uint           `json:"appId,omitempty"`
 }
 
 type ServiceConfig struct {
-	*BaseConfig  `json:"base,omitempty"`
-	*MapConfig   `json:"config,omitempty"`
-	*SuperConfig `json:"super,omitempty"`
+	ID          uint         `json:"id"`
+	CreatedAt   time.Time    `json:"createAt"`
+	BaseConfig  *BaseConfig  `json:"base,omitempty"`
+	ConfigMap   *ConfigMap   `json:"config,omitempty"`
+	SuperConfig *SuperConfig `json:"super,omitempty"`
+	ServiceId   uint
+}
+
+type Container struct {
+	ID        uint             `json:"id"`
+	CreatedAt time.Time        `json:"createAt"`
+	Name      string           `json:"name,omitempty"`
+	Image     string           `json:"image,omitempty"`
+	Status    int              `json:"status,omitempty"`
+	internal  string           `json:"internal,omitempty"`
+	Config    *ContainerConfig `json:"config,omitempty`
+	ServiceId uint
+}
+
+type ContainerConfig struct {
+	ID          uint         `json:"id"`
+	CreatedAt   time.Time    `json:"createAt"`
+	BaseConfig  *BaseConfig  `json:"base,omitempty"`
+	ConfigMap   *ConfigMap   `json:"config,omitempty"`
+	SuperConfig *SuperConfig `json:"super,omitempty"`
+	ContainerId uint
 }
 
 type BaseConfig struct {
-	Cpu    string `json:"cpu,omitempty" xorm:""`
-	Memory string `json:"memory,omitempty" xorm:""`
-	//0 stateless 1 stateful
-	Type    int      `json:"type,omitempty" xorm:""`
-	Volumes []Volume `json:"volumes,omitempty" xorm:"_"`
+	ID              uint      `json:"id"`
+	CreatedAt       time.Time `json:"createAt"`
+	Cpu             string    `json:"cpu,omitempty"`
+	Memory          string    `json:"memory,omitempty"`
+	Type            int       `json:"type,omitempty"` //0 stateless 1 stateful
+	Volumes         []*Volume `json:"volumes,omitempty"`
+	ServiceConfigId uint
 }
 
 type Volume struct {
-	Id          int    `json:"id,omitempty" xorm:"pk autoincr"`
-	ServiceName string `json:"serviceName,omitempty" xorm:"varchar(255)"`
-	TargetPath  string `json:"targetPath,omitempty" xorm:"varchar(255)"`
-	Storage     string `json:"storage,omitempty" xorm:"varchar(255)"`
-}
-
-type MapConfig struct {
-	Id            int        `json:"id,omitempty" xorm:"pk autoincr"`
-	ServiceName   string     `json:"serviceName,omitempty" xorm:"varchar(255)"`
-	ContainerPath string     `json:"containerPath,omitempty" xorm:""`
-	ConfigMap     *ConfigMap `json:"configMap,omitempty" xorm:"_"`
+	ID           uint      `json:"id"`
+	CreatedAt    time.Time `json:"createAt"`
+	TargetPath   string    `json:"targetPath,omitempty"`
+	Storage      string    `json:"storage,omitempty"`
+	BaseConfigId uint
 }
 
 type ConfigMap struct {
-	Id          int    `json:"id,omitempty" xorm:"pk autoincr"`
-	ServiceName string `json:"serviceName,omitempty" xorm:""`
-	Name        string `json:"name,omitempty" xorm:"pk"`
-	Content     string `json:"content,omitempty" xorm:"varchar(2048)"`
+	ID              uint      `json:"id"`
+	CreatedAt       time.Time `json:"createAt"`
+	Name            string    `json:"name,omitempty" `
+	Content         string    `json:"content,omitempty"`
+	ContainerPath   string    `json:"containerPath,omitempty"`
+	ServiceConfigId uint
 }
 
 type SuperConfig struct {
-	Id          int    `json:"id,omitempty" xorm:"pk autoincr"`
-	ServiceName string `json:"serviceName,omitempty" xorm:"varchar(255)"`
-	Envs        []Env  `json:"envs,omitempty" xorm:"_"`
-	Ports       []Port `json:"ports,omitempty" xorm:"_"`
+	ID              uint      `json:"id"`
+	CreatedAt       time.Time `json:"createAt"`
+	Envs            []*Env    `json:"envs,omitempty"`
+	Ports           []*Port   `json:"ports,omitempty"`
+	ServiceConfigId uint
 }
 
 type Env struct {
-	Id          int    `json:"id,omitempty" xorm:"pk autoincr"`
-	ServiceName string `json:"serviceName,omitempty" xorm:"varchar(255)"`
-	Key         string `json:"key,omitempty" xorm:"varchar(255)"`
-	Val         string `json:"val,omitempty" xorm:"varchar(1024)"`
+	ID            uint      `json:"id"`
+	CreatedAt     time.Time `json:"createAt"`
+	Key           string    `json:"key,omitempty"`
+	Val           string    `json:"val,omitempty"`
+	SuperConfigId uint
 }
 
 type Port struct {
-	Id            int    `json:"id,omitempty" xorm:"pk autoincr"`
-	ServiceName   string `json:"serviceName,omitempty" xorm:"varchar(255)"`
-	ContainerPort int    `json:"containerPort,omitempty" xorm:"int"`
-	ServicePort   int    `json:"servicePort,omitempty" xorm:"int"`
-	Protocol      string `json:"protocol,omitempty" xorm:"varchar(255)"`
+	ID            uint      `json:"id"`
+	CreatedAt     time.Time `json:"createAt"`
+	ContainerPort int       `json:"containerPort,omitempty"`
+	ServicePort   int       `json:"servicePort,omitempty"`
+	Protocol      string    `json:"protocol,omitempty""`
+	SuperConfigId uint
 }
 
 type Logs struct {
-	Id         int       `json:"id,omitempty" xorm:"pk autoincr"`
-	UserName   string    `json:",omitempty" xorm:""`
-	CreateTime time.Time `json:",omitempty" xorm:""`
-	AppName    string    `json:",omitempty" xorm:""`
-	EventType  string    `json:",omitempty" xorm:""`
+	ID        uint      `json:"id"`
+	CreatedAt time.Time `json:"createAt"`
+	UserName  string    `json:",omitempty"`
+	AppName   string    `json:",omitempty"`
+	EventType string    `json:",omitempty"`
 }

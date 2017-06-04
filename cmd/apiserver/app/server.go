@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"net/http"
 
-	a "apiserver/pkg/apis/app"
+	"apiserver/pkg/apis/apiserver"
 	"apiserver/pkg/componentconfig"
 	"apiserver/pkg/configz"
 	"apiserver/pkg/resource/sync"
@@ -61,7 +61,8 @@ func Run(server *Apiserver) error {
 }
 
 func installApiGroup(router *mux.Router) {
-	a.Register(router)
+	// a.Register(router)
+	apiserver.Register(router)
 }
 
 // func installNodeApi(router *mux.Router) {

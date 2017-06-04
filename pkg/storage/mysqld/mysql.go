@@ -15,61 +15,32 @@
 package mysqld
 
 import (
-	"io"
-
 	"apiserver/pkg/configz"
 	"apiserver/pkg/util/log"
 
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/go-xorm/xorm"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 // --------------
 // Engine
 
-type Engine struct {
-	*xorm.Engine
+type DB struct {
+	*gorm.DB
 }
 
 var (
-	engine *Engine
+	db *DB
 )
 
 func init() {
-	eng, err := xorm.NewEngine(configz.GetString("mysql", "dirver", "mysql"), configz.GetString("mysql", "dsn", ""))
+	tdb, err := gorm.Open("mysql", configz.GetString("mysql", "dsn", ""))
 	if err != nil {
 		log.Fatalf("init mysql connection err: %v", err)
 	}
-	if err = eng.Ping(); err != nil {
-		log.Fatalf("access the mysql db fail ,the reason is %s", err.Error())
-	}
-	eng.ShowSQL(configz.MustBool("system", "debug", false))
-	engine = &Engine{Engine: eng}
-	// cache
-	// cacher := xorm.NewLRUCacher(xorm.NewMemoryStore(), 1000)
-	// engine.SetDefaultCacher(cacher)
+	db = &DB{DB: tdb}
 }
 
-func GetEngine() *Engine {
-	return engine
-}
-
-func (engine *Engine) Debug() {
-	engine.ShowSQL(true)
-}
-
-func (engine *Engine) Close() error {
-	return engine.Close()
-}
-
-type Closer interface {
-	io.Closer
-}
-
-func Close(db Closer) {
-	if db != nil {
-		if err := db.Close(); err != nil {
-			log.Warning(err)
-		}
-	}
+func GetDB() *DB {
+	return db
 }

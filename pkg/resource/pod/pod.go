@@ -9,12 +9,13 @@ import (
 )
 
 //newPodSpec create k8s's PodSpec
-func NewPodSpec(svc *apiserver.Service) v1.PodSpec {
+func NewPodSpec(app *apiserver.App) v1.PodSpec {
 	var (
 		containerPorts       []v1.ContainerPort
 		envs                 []v1.EnvVar
 		volumeMs             []v1.VolumeMount
 		resourceRequirements v1.ResourceRequirements
+		svc                  = app.Items[0]
 	)
 	if svc.Config != nil {
 		ports := svc.Config.SuperConfig.Ports
@@ -28,14 +29,14 @@ func NewPodSpec(svc *apiserver.Service) v1.PodSpec {
 			}
 		}
 
-		if len(svc.Config.Envs) != 0 {
-			for _, env := range svc.Config.Envs {
+		if len(svc.Config.SuperConfig.Envs) != 0 {
+			for _, env := range svc.Config.SuperConfig.Envs {
 				envs = append(envs, v1.EnvVar{Name: env.Key, Value: env.Val})
 			}
 		}
 
-		if svc.Config.MapConfig != nil {
-			volumeMs = append(volumeMs, v1.VolumeMount{Name: svc.Name, MountPath: svc.Config.MapConfig.ContainerPath, ReadOnly: false})
+		if svc.Config.ConfigMap != nil {
+			volumeMs = append(volumeMs, v1.VolumeMount{Name: svc.Name, MountPath: svc.Config.ConfigMap.ContainerPath, ReadOnly: false})
 		}
 
 		if svc.Config.BaseConfig != nil {
@@ -68,10 +69,10 @@ func NewPodSpec(svc *apiserver.Service) v1.PodSpec {
 	}
 }
 
-func NewPod(svc *apiserver.Service) *v1.Pod {
+func NewPod(app *apiserver.App) *v1.Pod {
 	return &v1.Pod{
 		TypeMeta:   res.NewTypeMeta(res.ResourceKindPod, "v1"),
-		ObjectMeta: res.NewObjectMeta(svc),
-		Spec:       NewPodSpec(svc),
+		ObjectMeta: res.NewObjectMeta(app),
+		Spec:       NewPodSpec(app),
 	}
 }

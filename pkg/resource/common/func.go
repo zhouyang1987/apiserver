@@ -1,7 +1,7 @@
 package common
 
 import (
-	"apiserver/pkg/api/apiserver"
+	// "apiserver/pkg/api/apiserver"
 	"apiserver/pkg/client"
 	"apiserver/pkg/resource"
 	"apiserver/pkg/util/log"
@@ -151,11 +151,13 @@ func DeleteResource(param interface{}) error {
 		log.Noticef("replication [%v] is delete]", rc.Name)
 		return nil
 	case *extensions.Deployment:
+		backend := new(metav1.DeletionPropagation)
+		*backend = metav1.DeletePropagationForeground
 		deploy := param.(*extensions.Deployment)
 		err := client.K8sClient.
 			ExtensionsV1beta1().
 			Deployments(deploy.Namespace).
-			Delete(deploy.Name, &metav1.DeleteOptions{})
+			Delete(deploy.Name, &metav1.DeleteOptions{PropagationPolicy: backend})
 		if err != nil {
 			log.Errorf("delete deployment [%v] err:%v", deploy.Name, err)
 			return err
@@ -166,8 +168,8 @@ func DeleteResource(param interface{}) error {
 	return nil
 }
 
-func WatchPodStatus(svc *apiserver.Service) {
-	watcher, err := client.K8sClient.CoreV1().Pods(svc.UserName).Watch(metav1.ListOptions{})
+/*func WatchPodStatus(app *apiserver.App) {
+	watcher, err := client.K8sClient.CoreV1().Pods(app.UserName).Watch(metav1.ListOptions{})
 	if err != nil {
 		log.Errorf("watch the pod of replicationController named %s err:%v", svc.Name, err)
 	} else {
@@ -204,8 +206,7 @@ func WatchPodStatus(svc *apiserver.Service) {
 			}
 		}
 	}
-
-}
+}*/
 
 func UpdateResouce(param interface{}) error {
 	switch param.(type) {
@@ -259,6 +260,19 @@ func UpdateResouce(param interface{}) error {
 		return nil
 	}
 	return nil
+}
+
+func CreateService(svc *v1.Service) (*v1.Service, error) {
+	service, err := client.K8sClient.
+		CoreV1().
+		Services(svc.Namespace).
+		Create(svc)
+	if err != nil {
+		log.Errorf("create service [%v] err:%v", svc.Name, err)
+		return nil, err
+	}
+	log.Noticef("service [%v] was created]", svc.Name)
+	return service, nil
 }
 
 func GetDeploymentPods(appName, namespace string) ([]v1.Pod, error) {

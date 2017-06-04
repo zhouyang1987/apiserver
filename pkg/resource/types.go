@@ -16,12 +16,12 @@ func NewTypeMeta(kind, vereion string) metav1.TypeMeta {
 	}
 }
 
-func NewObjectMeta(svc *apiserver.Service) metav1.ObjectMeta {
+func NewObjectMeta(app *apiserver.App) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
-		Name:        svc.Name,
-		Namespace:   svc.UserName,
-		Labels:      map[string]string{"name": svc.Name},
-		Annotations: map[string]string{"name": svc.Name},
+		Name:        app.Items[0].Name,
+		Namespace:   app.UserName,
+		Labels:      map[string]string{"name": app.Items[0].Name},
+		Annotations: map[string]string{"name": app.Items[0].Name},
 	}
 }
 
