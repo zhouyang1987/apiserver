@@ -102,6 +102,11 @@ func QueryById(id uint) *App {
 				ConfigMap:   configmap,
 				SuperConfig: superConfig,
 			}
+			svc.Config = &ServiceConfig{
+				BaseConfig:  config.BaseConfig,
+				ConfigMap:   config.ConfigMap,
+				SuperConfig: config.SuperConfig,
+			}
 		}
 	}
 	return app
@@ -120,13 +125,11 @@ func Insert(app *App) {
 }
 
 func Update(app *App) {
-
 	for _, svc := range app.Items {
 		svc.Status = app.AppStatus
 		db.Update(svc)
 	}
-	app.Items = nil
-	db.Update(app)
+	db.Model(app).Update(app)
 }
 
 func Delete(app *App) {

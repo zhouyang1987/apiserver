@@ -141,19 +141,15 @@
 
 查询应用。
 
-URI: ApiURI/apps
+URI: ApiURI/{namespace}/apps
 
 Method: GET
 
 **请求**
 
-- JSON:
+- ApiURI/{namespace}/apps
 
-```text
-{
-    "lessee":"jxcf"
-}
-```
+
 **说明**：lessee 表示租户的意思，查询应用其实就是查询当前租户下的所有的应用，租户对应到k8s中的namespace
 
 **响应**
@@ -163,23 +159,66 @@ Method: GET
 
 ```text
 {
-  "apiversion": "alpha",
-  "code": 200,
-  "err": 0,
-  "msg": "",
+  "apiversion": "v1",
+  "status": "200",
   "data": [
     {
-      "id": 0,
-      "name": "",
-      "region": "",
-      "memory": "",
-      "cpu": "",
-      "instanceCount": 0,
-      "envs": "",
-      "ports": "",
-      "image": "",
-      "userName": "",
-      "remark": ""
+      "id": 2,
+      "createAt": "2017-06-06T01:01:15+08:00",
+      "nmae": "nginx",
+      "nameSpace": "huangjia",
+      "description": "this is a test nginx",
+      "serviceCount": 1,
+      "intanceCount": 1,
+      "external": "http://192.168.99.109:30976",
+      "services": [
+        {
+          "id": 2,
+          "createAt": "2017-06-06T01:01:15+08:00",
+          "name": "nginx-test",
+          "image": "nginx",
+          "instanceCount": 1,
+          "external": "http://192.168.99.109:30976",
+          "loadbalanceIp": "192.168.99.109",
+          "Config": null,
+          "containers": [
+            {
+              "id": 2,
+              "createAt": "2017-06-06T01:01:15+08:00",
+              "name": "test-1-123213",
+              "image": "nginx",
+              "Config": {
+                "id": 2,
+                "createAt": "2017-06-06T01:01:15+08:00",
+                "base": {
+                  "id": 1,
+                  "createAt": "2017-06-06T00:38:05+08:00",
+                  "cpu": "12Mi",
+                  "memory": "12m",
+                  "type": 1,
+                  "ServiceConfigId": 2
+                },
+                "config": {
+                  "id": 1,
+                  "createAt": "2017-06-06T00:38:05+08:00",
+                  "name": "nginx-test",
+                  "content": "{\"appName\":\"nginx\"}",
+                  "containerPath": "/opt",
+                  "ServiceConfigId": 2
+                },
+                "super": {
+                  "id": 1,
+                  "createAt": "2017-06-06T00:38:05+08:00",
+                  "ServiceConfigId": 2
+                },
+                "ContainerId": 2
+              },
+              "ServiceId": 2
+            }
+          ],
+          "appId": 2
+        }
+      ]
     }
   ]
 }
@@ -189,7 +228,7 @@ Method: GET
 
 部署应用。
 
-URI: ApiURI/apps
+URI: ApiURI/{namespace}/apps
 
 Method: POST
 
@@ -199,15 +238,54 @@ Method: POST
 - JSON
 ```text
 {
-  "name": "test",
-  "region": "north",
-  "memory": "128Mi",
-  "cpu": "128m",
-  "instanceCount": 1,
-  "image": "index.tenxcloud.com/carrotzpc/docker-2048:latest",
-  "userName": "huangjia",
-  "remark": "this is a test web application"
-}
+         "nmae": "nginx",
+         "nameSpace": "huangjia",
+         "description": "this is a test nginx",
+         "serviceCount": 1,
+         "intanceCount": 1,
+         "external": "",
+         "services": [
+             {
+                 "name": "nginx-test",
+                 "image": "nginx",
+                 "instanceCount": 1,
+                 "loadbalanceIp": "192.168.99.109",
+                 "Config": {
+                     "base": {
+                         "cpu": "12Mi",
+                         "memory": "12m",
+                         "type": 1,
+                         "volumes": null,
+                         "ServiceConfigId": 0
+                     },
+                     "config": {
+                         "name": "nginx-test",
+                         "content": "{\"appName\":\"nginx\"}",
+                         "containerPath": "/opt",
+                         "ServiceConfigId": 0
+                     },
+                     "super": {
+                         "envs": [
+                             {
+                                 "key": "test",
+                                 "val": "1",
+                                 "SuperConfigId": 0
+                             }
+                         ],
+                         "ports": [
+                             {
+                                 "containerPort": 8080,
+                                 "servicePort": 8080,
+                                 "protocol": "TCP",
+                                 "SuperConfigId": 0
+                             }
+                         ]
+                     }
+                 }
+             }
+         ]
+     }
+
 
 ```
 - 说明:
@@ -221,28 +299,22 @@ Method: POST
 {
   "api": "1.0",
   "status": "201",
-  "err": "OK",
-  "msg": "create app successed"
+  "data":"ok"
 }
 ```
 
 ### <span id="10.3">启动应用</span>
 
-上传文件。
+启动应用
 
-URI: ApiURI/apps
+URI: ApiURI/{namespace}/apps/{id}/start
 
-Method: PUT
+Method: PATCH
 
 **请求**
 
-- ApiURI/apps
+- ApiURI/{namespace}/apps/{id}/start
 
-```text
-{
-  "app_name":"test",
-  "ns":"huangjia"
-}
 ```
 - 说明：
 
@@ -256,8 +328,7 @@ Method: PUT
 {
   "api": "1.0",
   "status": "200",
-  "err": "OK",
-  "msg": "start application named test successed"
+  "data":"ok"
 }
 ```
 
@@ -265,32 +336,28 @@ Method: PUT
 
 停止应用。
 
-URI: ApiURI/apps
+URI: ApiURI/{namespace}/apps/{id}/stop
 
 Method: PATCH
 
 **请求**
 
-- ApiURI/apps
+- ApiURI/{namespace}/apps/{id}/stop
 
-```text
-{
-	"app_name":"test",
-  "ns":"huangjia"
-}
 ```
-
 - 说明：
 
 
 **响应**
 
+- HTTP Status: 200;
+- JSON:
+
 ```text
 {
   "api": "1.0",
   "status": "200",
-  "err": "OK",
-  "msg": "stop application named test successed"
+  "data":"ok"
 }
 ```
 
@@ -298,18 +365,13 @@ Method: PATCH
 
 删除应用。
 
-URI: ApiURI/apps
+- ApiURI/{namespace}/apps/{id}
 
 Method: DELETE
 
 **请求**
 
-```text
-{
-  "app_name":"test",
-  "ns":"huangjia"
-}
-```
+
 
 **响应**
 
@@ -318,10 +380,9 @@ Method: DELETE
 
 ```text
 {
-  "api": "1.0",
+  "apiversion": "v1",
   "status": "204",
-  "err": "OK",
-  "msg": "delete app successed"
+  "data": "ok"
 }
 ```
 
@@ -329,31 +390,73 @@ Method: DELETE
 
 弹性伸缩。
 
-URI: ApiURI/apps/scale
+URI: ApiURI/{namespace}/apps/{id}/scale
 
-Method: PATCH
+Method: PUT
 
 **请求**
 
-```text
 {
-  "app_name":"test",
-  "ns":"huangjia",
-  "app_cnt":3
-}
+         "nmae": "nginx",
+         "nameSpace": "huangjia",
+         "description": "this is a test nginx",
+         "serviceCount": 1,
+         "intanceCount": 2,
+         "external": "",
+         "services": [
+             {
+                 "name": "nginx-test",
+                 "image": "nginx",
+                 "instanceCount": 2,
+                 "loadbalanceIp": "192.168.99.109",
+                 "Config": {
+                     "base": {
+                         "cpu": "12Mi",
+                         "memory": "12m",
+                         "type": 1,
+                         "volumes": null,
+                         "ServiceConfigId": 0
+                     },
+                     "config": {
+                         "name": "nginx-test",
+                         "content": "{\"appName\":\"nginx\"}",
+                         "containerPath": "/opt",
+                         "ServiceConfigId": 0
+                     },
+                     "super": {
+                         "envs": [
+                             {
+                                 "key": "test",
+                                 "val": "1",
+                                 "SuperConfigId": 0
+                             }
+                         ],
+                         "ports": [
+                             {
+                                 "containerPort": 8080,
+                                 "servicePort": 8080,
+                                 "protocol": "TCP",
+                                 "SuperConfigId": 0
+                             }
+                         ]
+                     }
+                 }
+             }
+         ]
+     }
+
 ```
 
 **响应**
 
-- HTTP Status: 201;
+- HTTP Status: 200;
 - JSON:
 
 ```text
 {
   "api": "1.0",
-  "status": "201",
-  "err": "OK",
-  "msg": "scale application named test successed"
+  "status": "200",
+  "data":"ok"
 }
 ```
 
@@ -361,33 +464,74 @@ Method: PATCH
 
 灰度升级。
 
-URI: ApiURI/apps/rollupdate
+URI: ApiURI/{namespace}/apps/{id}/roll
 
-Method: POST
+Method: PUT
 
 **请求**
 
-```text
 {
-  "app_name":"test",
-  "ns":"huangjia",
-  "image":"index.tenxcloud.com/carrotzpc/docker-2048:20150730"
-}
+         "nmae": "nginx",
+         "nameSpace": "huangjia",
+         "description": "this is a test nginx",
+         "serviceCount": 1,
+         "intanceCount": 2,
+         "external": "",
+         "services": [
+             {
+                 "name": "nginx-test",
+                 "image": "nginx:1.8",
+                 "instanceCount": 2,
+                 "loadbalanceIp": "192.168.99.109",
+                 "Config": {
+                     "base": {
+                         "cpu": "12Mi",
+                         "memory": "12m",
+                         "type": 1,
+                         "volumes": null,
+                         "ServiceConfigId": 0
+                     },
+                     "config": {
+                         "name": "nginx-test",
+                         "content": "{\"appName\":\"nginx\"}",
+                         "containerPath": "/opt",
+                         "ServiceConfigId": 0
+                     },
+                     "super": {
+                         "envs": [
+                             {
+                                 "key": "test",
+                                 "val": "1",
+                                 "SuperConfigId": 0
+                             }
+                         ],
+                         "ports": [
+                             {
+                                 "containerPort": 8080,
+                                 "servicePort": 8080,
+                                 "protocol": "TCP",
+                                 "SuperConfigId": 0
+                             }
+                         ]
+                     }
+                 }
+             }
+         ]
+     }
+
 ```
 
 **响应**
 
-- HTTP Status: 201;
+- HTTP Status: 200;
 - JSON:
 
 ```text
 {
   "api": "1.0",
-  "status": "201",
-  "err": "OK",
-  "msg": "rolling update application named test successed"
+  "status": "200",
+  "data":"ok"
 }
-```
 
 ### <span id="10.8">重新部署</span>
 
@@ -418,40 +562,81 @@ Method: UPDATE
   "msg": "rolling update app successed",
 } -->
 ```
+- 说明：暂时不打算提供该接口
+
 
 ### <span id="10.9">动态扩容</span>
 
 动态扩容。
 
-URI: ApiURI/apps/expansion
+URI: ApiURI/{namespace}/apps/{id}/roll
 
 Method: PUT
 
 **请求**
 
-```text
-
 {
-  "app_name":"test",
-  "ns":"huangjia",
-	"cpu":"512Mi",
-	"memory":"512m"
-}
+         "nmae": "nginx",
+         "nameSpace": "huangjia",
+         "description": "this is a test nginx",
+         "serviceCount": 1,
+         "intanceCount": 2,
+         "external": "",
+         "services": [
+             {
+                 "name": "nginx-test",
+                 "image": "nginx:1.8",
+                 "instanceCount": 2,
+                 "loadbalanceIp": "192.168.99.109",
+                 "Config": {
+                     "base": {
+                         "cpu": "24Mi",
+                         "memory": "24m",
+                         "type": 1,
+                         "volumes": null,
+                         "ServiceConfigId": 0
+                     },
+                     "config": {
+                         "name": "nginx-test",
+                         "content": "{\"appName\":\"nginx\"}",
+                         "containerPath": "/opt",
+                         "ServiceConfigId": 0
+                     },
+                     "super": {
+                         "envs": [
+                             {
+                                 "key": "test",
+                                 "val": "1",
+                                 "SuperConfigId": 0
+                             }
+                         ],
+                         "ports": [
+                             {
+                                 "containerPort": 8080,
+                                 "servicePort": 8080,
+                                 "protocol": "TCP",
+                                 "SuperConfigId": 0
+                             }
+                         ]
+                     }
+                 }
+             }
+         ]
+     }
+
 ```
 
 **响应**
 
-- HTTP Status: 201;
+- HTTP Status: 200;
 - JSON:
 
 ```text
 {
   "api": "1.0",
-  "status": "201",
-  "err": "OK",
-  "msg": "Expansion application named test successed"
+  "status": "200",
+  "data":"ok"
 }
-```
 
 ### <span id="10.10">获取应用的pod</span>
 

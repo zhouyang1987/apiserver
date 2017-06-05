@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	engine = mysqld.GetEngine()
+	db = mysqld.GetDB()
 )
 
 type Image struct {
@@ -19,22 +19,22 @@ type Image struct {
 }
 
 type Manifest struct {
-	Name          string `json:"name" xorm:"pk not null varchar(255)"`
-	Tag           string `json:"tag" xorm:"pk not null varchar(255)"`
-	Architecture  string `json:"architecture" xorm:"varchar(255)"`
-	Os            string `json:"os" xorm:"varchar(255)"`
-	Author        string `json:"author" xorm:"varchar(255)"`
-	Id            string `json:"id" xorm:"varchar(255)"`
-	ParentId      string `json:"parent" xorm:"varchar(255)"`
-	Created       string `json:"created" xorm:"varchar(255)"`
-	DockerVersion string `json:"docker_version" xorm:"varchar(255)"`
-	Pull          string `json:"pull" xorm:"varchar(255)"`
+	ID            uint
+	Name          string `json:"name"`
+	Tag           string `json:"tag"`
+	Architecture  string `json:"architecture"`
+	Os            string `json:"os"`
+	Author        string `json:"author"`
+	Id            string `json:"id"`
+	ParentId      string `json:"parent"`
+	Created       string `json:"created"`
+	DockerVersion string `json:"docker_version"`
+	Pull          string `json:"pull"`
 }
 
 func init() {
-	if err := engine.Sync(new(Manifest)); err != nil {
-		log.Fatalf("Sync fail :%s", err.Error())
-	}
+	db.SingularTable(true)
+	db.CreateTable(&Manifest{})
 }
 
 func (manifest *Manifest) String() string {

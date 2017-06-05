@@ -39,6 +39,18 @@ func CreateResource(param interface{}) error {
 		}
 		log.Noticef("service [%v] is created]", svc.Name)
 		return nil
+	case *v1.ConfigMap:
+		cfgMap := param.(*v1.ConfigMap)
+		_, err := client.K8sClient.
+			CoreV1().
+			ConfigMaps(cfgMap.Namespace).
+			Create(cfgMap)
+		if err != nil {
+			log.Errorf("create configMap [%v] err:%v", cfgMap.Name, err)
+			return err
+		}
+		log.Noticef("configMap [%v] is created]", cfgMap.Name)
+		return nil
 	case *v1.ReplicationController:
 		rc := param.(*v1.ReplicationController)
 		_, err := client.K8sClient.

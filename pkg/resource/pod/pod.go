@@ -36,7 +36,7 @@ func NewPodSpec(app *apiserver.App) v1.PodSpec {
 		}
 
 		if svc.Config.ConfigMap != nil {
-			volumeMs = append(volumeMs, v1.VolumeMount{Name: svc.Name, MountPath: svc.Config.ConfigMap.ContainerPath, ReadOnly: false})
+			volumeMs = append(volumeMs, v1.VolumeMount{Name: svc.Config.ConfigMap.Name, MountPath: svc.Config.ConfigMap.ContainerPath, ReadOnly: false})
 		}
 
 		if svc.Config.BaseConfig != nil {
@@ -53,7 +53,17 @@ func NewPodSpec(app *apiserver.App) v1.PodSpec {
 		}
 	}
 	return v1.PodSpec{
-		Volumes:       []v1.Volume{},
+		Volumes: []v1.Volume{
+			v1.Volume{
+				Name: app.Items[0].Name,
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: app.Items[0].Name},
+					},
+				},
+			},
+		},
 		RestartPolicy: v1.RestartPolicyAlways,
 		Containers: []v1.Container{
 			v1.Container{

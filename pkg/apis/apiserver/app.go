@@ -12,6 +12,7 @@ import (
 	"apiserver/pkg/configz"
 	"apiserver/pkg/resource"
 	k8sclient "apiserver/pkg/resource/common"
+	"apiserver/pkg/resource/configMap"
 	"apiserver/pkg/resource/deployment"
 	"apiserver/pkg/resource/service"
 	"apiserver/pkg/resource/sync"
@@ -69,7 +70,7 @@ func StopOrStartApp(request *http.Request) (string, interface{}) {
 	}
 
 	apiserver.Update(app)
-	return r.StatusOK, nil
+	return r.StatusOK, "ok"
 }
 
 func UpdateAppConfig(request *http.Request) (string, interface{}) {
@@ -119,7 +120,7 @@ func UpdateAppConfig(request *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, "rolling updte application named " + appName + ` failed`
 	}
 
-	return r.StatusOK, nil
+	return r.StatusOK, "ok"
 }
 
 func DeleteApp(request *http.Request) (string, interface{}) {
@@ -144,7 +145,7 @@ func DeleteApp(request *http.Request) (string, interface{}) {
 	}
 
 	apiserver.Delete(app)
-	return r.StatusNoContent, nil
+	return r.StatusNoContent, "ok"
 }
 
 func CreateApp(request *http.Request) (string, interface{}) {
@@ -163,6 +164,11 @@ func CreateApp(request *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, err
 	}
 
+	cfgMap := configMap.NewConfigMap(app)
+	if err := k8sclient.CreateResource(cfgMap); err != nil {
+		return r.StatusInternalServerError, err
+	}
+
 	k8sDeploy := deployment.NewDeployment(app)
 	if k8sclient.ExsitResource(k8sDeploy) {
 		return r.StatusForbidden, "the deployment exist"
@@ -176,7 +182,7 @@ func CreateApp(request *http.Request) (string, interface{}) {
 	app.Items[0].External = external
 	app.Items[0].Items = []*apiserver.Container{&apiserver.Container{Name: "test-1-123213", Image: app.Items[0].Image, Status: 0}}
 	apiserver.Insert(app)
-	return r.StatusCreated, map[string]interface{}{"namespace": mux.Vars(request)["namespace"]}
+	return r.StatusCreated, "ok"
 }
 
 func validateApp(request *http.Request) (*apiserver.App, error) {
