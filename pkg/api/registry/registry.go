@@ -62,10 +62,10 @@ func (manifest *Manifest) QuerySet(where map[string]interface{}) (fests []*Manif
 
 	if where["name"].(string) != "" {
 		name := where["name"].(string)
-		db.Model(manifest).Where("name like ", `'%`+name+`%'`).Offset(pageCnt * pageNum).Limit(pageNum).Find(&fests)
+		db.Model(manifest).Where("name like ", `'%`+name+`%'`).Offset(pageCnt * pageNum).Limit(pageCnt).Find(&fests)
 		db.Model(manifest).Select("count(distinct name)").Where("name like ?", `%`+name+`%`).Count(&total)
 	} else {
-		db.Model(manifest).Offset(pageCnt * pageNum).Limit(pageNum).Order("name desc").Find(&fests)
+		db.Where("user_name=?", where["namespace"].(string)).Offset(pageCnt * pageNum).Limit(pageCnt).Order("name desc").Find(&fests)
 		db.Model(manifest).Select("count(distinct name)").Count(&total)
 	}
 	return

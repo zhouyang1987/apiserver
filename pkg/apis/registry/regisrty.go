@@ -33,7 +33,7 @@ import (
 
 func Register(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/images", "GET", GetImages)
-	r.RegisterHttpHandler(router, "/images", "OPTIONS", Option)
+	r.RegisterHttpHandler(router, "/{namespace}/images", "OPTIONS", Option)
 	// r.RegisterHttpHandler(router, "/images", "DELETE", DeleteImage)
 }
 
@@ -64,12 +64,13 @@ func Option(request *http.Request) (string, interface{}) {
 }
 
 func GetImages(req *http.Request) (string, interface{}) {
+	namespace := mux.Vars(req)["namespace"]
 	name := req.FormValue("name")
 	pageCnt := req.FormValue("pageCnt")
 	pageNum := req.FormValue("pageNum")
 	cnt, _ := strconv.Atoi(pageCnt)
 	num, _ := strconv.Atoi(pageNum)
-	set, total := new(regModel.Manifest).QuerySet(map[string]interface{}{"name": name, "pageCnt": cnt, "pageNum": num})
+	set, total := new(regModel.Manifest).QuerySet(map[string]interface{}{"namespace": namespace, "name": name, "pageCnt": cnt, "pageNum": num})
 	imageSet := []*regModel.Image{}
 	if tags, exsit := store.cache[name]; exsit {
 		image := &regModel.Image{}

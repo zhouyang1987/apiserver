@@ -121,8 +121,8 @@ func Insert(app *App) {
 			SuperConfig: svcConfig.SuperConfig,
 		}
 	}
-	if db.NewRecord(app) {
-		db.Create(app)
+	if db.Model(app).First(app).RecordNotFound() {
+		db.Model(app).Create(app)
 	}
 }
 
