@@ -637,6 +637,7 @@ Method: PUT
   "status": "200",
   "data":"ok"
 }
+```
 
 ### <span id="10.10">获取应用的pod</span>
 

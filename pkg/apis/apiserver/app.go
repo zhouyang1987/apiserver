@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-
-	"apiserver/pkg/util/log"
+	"time"
 
 	"apiserver/pkg/api/apiserver"
 	"apiserver/pkg/configz"
@@ -33,6 +32,12 @@ func Register(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/apps/{id}", "DELETE", DeleteApp)
 	r.RegisterHttpHandler(router, "/{namespace}/apps/{id}/{verb}", "PUT", UpdateAppConfig)
 	r.RegisterHttpHandler(router, "/{namespace}/apps/{id}/{verb}", "PATCH", StopOrStartApp)
+	r.RegisterHttpHandler(router, "/{namespace}/apps", "OPTIONS", Option)
+
+}
+
+func Option(request *http.Request) (string, interface{}) {
+	return r.StatusOK, "ok"
 }
 
 func GetApps(request *http.Request) (string, interface{}) {
@@ -49,26 +54,25 @@ func GetApp(request *http.Request) (string, interface{}) {
 func StopOrStartApp(request *http.Request) (string, interface{}) {
 	id, _ := strconv.ParseUint(mux.Vars(request)["id"], 10, 64)
 	app := apiserver.QueryById(uint(id))
-	appName := app.Items[0].Name
-	namespace := mux.Vars(request)["namespace"]
-	verb := mux.Vars(request)["verb"] //verb the action of app , start or stop
-	log.Debug(verb)
-	deploy, exsit := sync.ListDeployment[namespace][appName]
-	if !exsit {
-		return r.StatusNotFound, "application named " + appName + ` does't exist`
+	for _, svc := range app.Items {
+		appName := svc.Name
+		namespace := mux.Vars(request)["namespace"]
+		verb := mux.Vars(request)["verb"] //verb the action of app , start or stop
+		deploy, exsit := sync.ListDeployment[namespace][appName]
+		if !exsit {
+			return r.StatusNotFound, "service named " + appName + ` does't exist`
+		}
+		if verb == "stop" {
+			deploy.Spec.Replicas = parseUtil.IntToInt32Pointer(0)
+			app.AppStatus = resource.AppStop
+		} else {
+			deploy.Spec.Replicas = parseUtil.IntToInt32Pointer(app.Items[0].InstanceCount)
+			app.AppStatus = resource.AppRunning
+		}
+		if err := k8sclient.UpdateResouce(&deploy); err != nil {
+			return r.StatusInternalServerError, err
+		}
 	}
-
-	if verb == "stop" {
-		deploy.Spec.Replicas = parseUtil.IntToInt32Pointer(0)
-		app.AppStatus = resource.AppStop
-	} else {
-		deploy.Spec.Replicas = parseUtil.IntToInt32Pointer(app.Items[0].InstanceCount)
-		app.AppStatus = resource.AppRunning
-	}
-	if err := k8sclient.UpdateResouce(&deploy); err != nil {
-		return r.StatusInternalServerError, err
-	}
-
 	apiserver.Update(app)
 	return r.StatusOK, "ok"
 }
@@ -180,7 +184,23 @@ func CreateApp(request *http.Request) (string, interface{}) {
 	external := fmt.Sprintf("http://%s:%v", configz.GetString("apiserver", "clusterNodes", "127.0.0.1"), svc.Spec.Ports[0].NodePort)
 	app.External = external
 	app.Items[0].External = external
-	app.Items[0].Items = []*apiserver.Container{&apiserver.Container{Name: "test-1-123213", Image: app.Items[0].Image, Status: 0}}
+
+	time.Sleep(5 * time.Second)
+	podList, err := k8sclient.GetDeploymentPods(svc.Name, app.UserName)
+	if err != nil {
+		return r.StatusInternalServerError, err
+	}
+
+	var cs []*apiserver.Container
+	for _, pod := range podList {
+		c := &apiserver.Container{Name: pod.ObjectMeta.Name, Image: app.Items[0].Image, Internal: pod.Status.PodIP}
+		if pod.Status.Phase == "running" {
+			c.Status = resource.AppRunning
+		}
+
+		cs = append(cs, c)
+	}
+	app.Items[0].Items = cs
 	apiserver.Insert(app)
 	return r.StatusCreated, "ok"
 }

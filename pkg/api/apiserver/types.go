@@ -46,7 +46,7 @@ type Container struct {
 	Name      string           `json:"name,omitempty"`
 	Image     string           `json:"image,omitempty"`
 	Status    int              `json:"status,omitempty"`
-	internal  string           `json:"internal,omitempty"`
+	Internal  string           `json:"internal,omitempty"`
 	Config    *ContainerConfig `json:"config,omitempty`
 	ServiceId uint
 }

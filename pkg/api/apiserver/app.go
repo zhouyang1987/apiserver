@@ -114,10 +114,12 @@ func QueryById(id uint) *App {
 
 func Insert(app *App) {
 	svcConfig := app.Items[0].Config
-	app.Items[0].Items[0].Config = &ContainerConfig{
-		BaseConfig:  svcConfig.BaseConfig,
-		ConfigMap:   svcConfig.ConfigMap,
-		SuperConfig: svcConfig.SuperConfig,
+	if len(app.Items[0].Items) != 0 {
+		app.Items[0].Items[0].Config = &ContainerConfig{
+			BaseConfig:  svcConfig.BaseConfig,
+			ConfigMap:   svcConfig.ConfigMap,
+			SuperConfig: svcConfig.SuperConfig,
+		}
 	}
 	if db.NewRecord(app) {
 		db.Create(app)
@@ -127,7 +129,7 @@ func Insert(app *App) {
 func Update(app *App) {
 	for _, svc := range app.Items {
 		svc.Status = app.AppStatus
-		db.Update(svc)
+		db.Model(svc).Update(svc)
 	}
 	db.Model(app).Update(app)
 }

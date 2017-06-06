@@ -1,11 +1,8 @@
 package registry
 
 import (
-	"errors"
-
 	"apiserver/pkg/storage/mysqld"
 	"apiserver/pkg/util/jsonx"
-	"apiserver/pkg/util/log"
 )
 
 var (
@@ -19,7 +16,7 @@ type Image struct {
 }
 
 type Manifest struct {
-	ID            uint
+	UserName      string `json:"namespace"`
 	Name          string `json:"name"`
 	Tag           string `json:"tag"`
 	Architecture  string `json:"architecture"`
@@ -42,68 +39,38 @@ func (manifest *Manifest) String() string {
 	return manifestStr
 }
 
-func (manifest *Manifest) Insert() error {
-	_, err := engine.Insert(manifest)
-	if err != nil {
-		log.Debugf("插入数据库失败：%v", err)
-		return err
-	}
-	return nil
+func (manifest *Manifest) Insert() {
+	db.Create(manifest)
 }
 
-func (manifest *Manifest) Delete() error {
-	_, err := engine.Delete(manifest)
-	if err != nil {
-		return err
-	}
-	return nil
+func (manifest *Manifest) Delete() {
+	db.Model(manifest).Delete(manifest)
 }
 
-func (manifest *Manifest) Update() error {
-	_, err := engine.Update(manifest)
-	if err != nil {
-		return err
-	}
-	return nil
+func (manifest *Manifest) Update() {
+	db.Model(manifest).Update(manifest)
 }
 
-func (manifest *Manifest) QueryOne() (*Manifest, error) {
-	has, err := engine.Get(manifest)
-	if err != nil {
-		return nil, err
-	}
-	if !has {
-		return nil, errors.New("current app not exsit")
-	}
-	return manifest, nil
+func (manifest *Manifest) QueryOne() *Manifest {
+	db.Model(manifest).First(manifest)
+	return manifest
 }
 
-func (manifest *Manifest) QuerySet(where map[string]interface{}) (fests []*Manifest, total int64, err error) {
+func (manifest *Manifest) QuerySet(where map[string]interface{}) (fests []*Manifest, total int64) {
 	pageCnt := where["pageCnt"].(int)
 	pageNum := where["pageNum"].(int)
+
 	if where["name"].(string) != "" {
 		name := where["name"].(string)
-		if err = engine.Where("name=?", name).Limit(pageCnt, pageCnt*pageNum).Desc("name").Find(&fests); err != nil {
-			return
-		}
-		if total, err = engine.Distinct("name").Where("name=?", name).Count(Manifest{}); err != nil {
-			return
-		}
+		db.Model(manifest).Where("name like ", `'%`+name+`%'`).Offset(pageCnt * pageNum).Limit(pageNum).Find(&fests)
+		db.Model(manifest).Select("count(distinct name)").Where("name like ?", `%`+name+`%`).Count(&total)
 	} else {
-		if err = engine.Limit(pageCnt, pageCnt*pageNum).Desc("name").Find(&fests); err != nil {
-			return
-		}
-		if total, err = engine.Distinct("name").Count(Manifest{}); err != nil {
-			return
-		}
+		db.Model(manifest).Offset(pageCnt * pageNum).Limit(pageNum).Order("name desc").Find(&fests)
+		db.Model(manifest).Select("count(distinct name)").Count(&total)
 	}
 	return
 }
 
-func (manifest *Manifest) Exsit() (bool, error) {
-	has, err := engine.Get(manifest)
-	if err != nil {
-		return false, err
-	}
-	return has, nil
+func (manifest *Manifest) Exsit() bool {
+	return db.Model(manifest).First(manifest).RecordNotFound()
 }
