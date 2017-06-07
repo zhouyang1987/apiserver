@@ -180,45 +180,45 @@ func DeleteResource(param interface{}) error {
 	return nil
 }
 
-/*func WatchPodStatus(app *apiserver.App) {
-	watcher, err := client.K8sClient.CoreV1().Pods(app.UserName).Watch(metav1.ListOptions{})
-	if err != nil {
-		log.Errorf("watch the pod of replicationController named %s err:%v", svc.Name, err)
-	} else {
-		eventChan := watcher.ResultChan()
-		for {
-			select {
-			case event := <-eventChan:
-				if event.Object != nil {
-					if event.Object.(*v1.Pod).Status.Phase == v1.PodRunning {
-						svc.Status = resource.AppRunning
-					}
-					if event.Object.(*v1.Pod).Status.Phase == v1.PodSucceeded {
-						svc.Status = resource.AppSuccessed
-					}
-					if event.Object.(*v1.Pod).Status.Phase == v1.PodPending {
-						svc.Status = resource.AppBuilding
-					}
-					if event.Object.(*v1.Pod).Status.Phase == v1.PodFailed {
-						svc.Status = resource.AppFailed
-					}
-					if event.Object.(*v1.Pod).Status.Phase == v1.PodUnknown {
-						svc.Status = resource.AppUnknow
-					}
-					if err := svc.Update(); err != nil {
-						log.Errorf("update application's status to %s err:%v", resource.Status[svc.Status], err)
+// func WatchPodStatus() {
+// 	watcher, err := client.K8sClient.CoreV1().Pods("").Watch(metav1.ListOptions{})
+// 	if err != nil {
+// 		log.Errorf("watch the pod of replicationController named %s err:%v", svc.Name, err)
+// 	} else {
+// 		eventChan := watcher.ResultChan()
+// 		for {
+// 			select {
+// 			case event := <-eventChan:
+// 				if event.Object != nil {
+// 					if event.Object.(*v1.Pod).Status.Phase == v1.PodRunning {
+// 						svc.Status = resource.AppRunning
+// 					}
+// 					if event.Object.(*v1.Pod).Status.Phase == v1.PodSucceeded {
+// 						svc.Status = resource.AppSuccessed
+// 					}
+// 					if event.Object.(*v1.Pod).Status.Phase == v1.PodPending {
+// 						svc.Status = resource.AppBuilding
+// 					}
+// 					if event.Object.(*v1.Pod).Status.Phase == v1.PodFailed {
+// 						svc.Status = resource.AppFailed
+// 					}
+// 					if event.Object.(*v1.Pod).Status.Phase == v1.PodUnknown {
+// 						svc.Status = resource.AppUnknow
+// 					}
+// 					if err := svc.Update(); err != nil {
+// 						log.Errorf("update application's status to %s err:%v", resource.Status[svc.Status], err)
 
-						continue
-					} else {
-						if svc.Status == resource.AppRunning {
-							break
-						}
-					}
-				}
-			}
-		}
-	}
-}*/
+// 						continue
+// 					} else {
+// 						if svc.Status == resource.AppRunning {
+// 							break
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// }
 
 func UpdateResouce(param interface{}) error {
 	switch param.(type) {
@@ -293,7 +293,6 @@ func GetDeploymentPods(appName, namespace string) ([]v1.Pod, error) {
 		log.Errorf("get deployment [%v]'s pods err:%v", appName, err)
 		return nil, err
 	}
-	log.Debugf("%v", list)
 	return list.Items, nil
 }
 

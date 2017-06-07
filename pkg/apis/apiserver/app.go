@@ -168,9 +168,11 @@ func CreateApp(request *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, err
 	}
 
-	cfgMap := configMap.NewConfigMap(app)
-	if err := k8sclient.CreateResource(cfgMap); err != nil {
-		return r.StatusInternalServerError, err
+	if app.Items[0].Config.ConfigMap != nil {
+		cfgMap := configMap.NewConfigMap(app)
+		if err := k8sclient.CreateResource(cfgMap); err != nil {
+			return r.StatusInternalServerError, err
+		}
 	}
 
 	k8sDeploy := deployment.NewDeployment(app)
