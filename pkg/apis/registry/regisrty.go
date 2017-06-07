@@ -156,7 +156,7 @@ func SyncImage() {
 			ms.Name = catalog
 			ms.Tag = tag
 			ms.Pull = fmt.Sprintf("docker pull %s/%s:%s", configz.GetString("registry", "endpoint", "http://0.0.0.0:5000"), catalog, tag)
-			if exsit := ms.Exsit(); exsit {
+			if exsit := ms.Exsit(); !exsit {
 				ms.Insert()
 			}
 		}
