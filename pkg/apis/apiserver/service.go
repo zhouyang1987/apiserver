@@ -160,6 +160,7 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 		if err := k8sclient.UpdateResouce(&deploy); err != nil {
 			return r.StatusInternalServerError, "rolling updte application named " + svc.Name + ` failed`
 		}
+		apiserver.UpdateService(svc)
 	}
 
 	if verb == "roll" {
@@ -178,12 +179,20 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 
 		svc.Image = rollOption.Image
 		svc.Items[0].Image = rollOption.Image
+		svc.Config.ConfigMap = rollOption.Conifg
+
+		cfgMap := configMap.NewConfigMapByService(svc, namespace)
+		if err := k8sclient.UpdateResouce(cfgMap); err != nil {
+			return r.StatusInternalServerError, err
+		}
+
 		if err := k8sclient.UpdateResouce(&deploy); err != nil {
 			return r.StatusInternalServerError, "rolling updte application named " + svc.Name + ` failed`
 		}
+		ChangeServiceStatus(svc, namespace)
 	}
 
-	return r.StatusOK, "ok"
+	return r.StatusCreated, "ok"
 }
 
 func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
@@ -237,7 +246,7 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 			return r.StatusInternalServerError, err
 		}
 	}
-	return r.StatusOK, "ok"
+	return r.StatusCreated, "ok"
 }
 
 func validateService(request *http.Request) (*apiserver.Service, error) {

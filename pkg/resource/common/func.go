@@ -284,6 +284,15 @@ func UpdateResouce(param interface{}) error {
 		}
 		log.Noticef("replication [%v] is updated]", deploy.Name)
 		return nil
+	case *v1.ConfigMap:
+		cfgMap := param.(*v1.ConfigMap)
+		_, err := client.K8sClient.CoreV1().ConfigMaps(cfgMap.Namespace).Update(cfgMap)
+		if err != nil {
+			log.Errorf("update configMap [%v] err:%v", cfgMap.Name, err)
+			return err
+		}
+		log.Noticef("configMap [%v] is updated]", cfgMap.Name)
+		return nil
 	}
 	return nil
 }

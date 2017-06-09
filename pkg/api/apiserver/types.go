@@ -130,5 +130,6 @@ type ExpansionOption struct {
 }
 
 type RollOption struct {
-	Image string `json:"image"`
+	Image  string     `json:"image"`
+	Conifg *ConfigMap `json:"config"`
 }

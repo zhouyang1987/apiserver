@@ -56,7 +56,7 @@ func RedeployContainer(request *http.Request) (string, interface{}) {
 	if err := ChangeContainerStatus(svc, namespace); err != nil {
 		return r.StatusInternalServerError, err
 	}
-	return r.StatusOK, "ok"
+	return r.StatusCreated, "ok"
 }
 
 func ChangeContainerStatus(svc *apiserver.Service, namespace string) error {

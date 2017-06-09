@@ -167,7 +167,7 @@ func UpdateAppConfig(request *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, "rolling updte application named " + appName + ` failed`
 	}
 
-	return r.StatusOK, "ok"
+	return r.StatusCreated, "ok"
 }
 
 func StopOrStartOrRedeployApp(request *http.Request) (string, interface{}) {
@@ -228,7 +228,7 @@ func StopOrStartOrRedeployApp(request *http.Request) (string, interface{}) {
 			}
 		}
 	}
-	return r.StatusOK, "ok"
+	return r.StatusCreated, "ok"
 }
 
 func validateApp(request *http.Request) (*apiserver.App, error) {

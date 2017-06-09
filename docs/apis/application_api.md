@@ -32,10 +32,8 @@
   - [查询容器](#12.1)
   - [重新部署容器](#12.2)
 * **[日志接口](#13)**
-  - [获取应用的pod](#13.1)
-  - [获取应用pod的事件](#13.2)
-  - [获取应用pod的cpu实用情况](#13.3)
-  - [获取应用pod的内存实用情况](#13.4)
+  - [获取应用pod的事件](#13.1)
+  - [获取应用pod的cpu/memory实用情况](#13.2)
 * **[镜像接口](#14)**
   - [获取镜像列表](#14.1)
 * **[构建接口](#15)**
@@ -341,7 +339,7 @@ Method: PATCH
 ```
 {
   "apiversion": "v1",
-  "status": "200",
+  "status": "201",
   "data": "ok"
 }
 
@@ -371,7 +369,7 @@ Method: PATCH
 ```
 {
   "apiversion": "v1",
-  "status": "200",
+  "status": "201",
   "data": "ok"
 }
 
@@ -419,6 +417,16 @@ Method: PATCH
 **请求**
 
 - ApiURI/api/v1/huangjia/apps
+
+**响应**
+
+```
+{
+  "apiversion": "v1",
+  "status": "201",
+  "data": "ok"
+}
+```
 
 
 ## <span id="11">服务接口</span>
@@ -640,7 +648,7 @@ Method: PUT
 ```
 {
   "apiversion": "v1",
-  "status": "200",
+  "status": "201",
   "data": "ok"
 }
 
@@ -662,16 +670,29 @@ Method: PUT
 
 ```
 {
-  "image":"nginx:1.8"
+    "image":"nginx:latest",
+    "config":{
+          "name": "nginx-test",
+          "content": "{\"name\":\"huangjia\"}",
+          "containerPath": "/opt"
+        }
 }
 ```
+**说明**
+
+- image：升级发布的镜像
+- config：该服务挂载的配置文件（目前没支持多个配置文件挂载，看需求，如果需要挂载多个配置文件，我会提供支持）
+- config->name: 这个name一定要和对应的service的name一致
+- config->content: 配置文件内容
+- config->containerPath: 挂载到容器中的目录
+
 
 **响应**
 
 ```
 {
   "apiversion": "v1",
-  "status": "200",
+  "status": "201",
   "data": "ok"
 }
 
@@ -685,6 +706,7 @@ URI: ApiURI/api/v1/{namespace}/services/{id}
 Method: PATCH
 
 **参数说明**
+
 - namespace: 服务所属租户
 
 **请求**
@@ -696,7 +718,7 @@ Method: PATCH
 ```
 {
   "apiversion": "v1",
-  "status": "200",
+  "status": "201",
   "data": "ok"
 }
 
@@ -711,7 +733,9 @@ URI: ApiURI/api/v1/{namespace}/services/{id}
 Method: PUT
 
 **参数说明**
+
 - namespace: 服务所属租户
+- id: 服务id 
 
 **请求**
 
@@ -722,7 +746,7 @@ Method: PUT
 ```
 {
   "apiversion": "v1",
-  "status": "204",
+  "status": "201",
   "data": "ok"
 }
 
@@ -842,8 +866,170 @@ Method: PATCH
 ```
 {
   "apiversion": "v1",
-  "status": "200",
+  "status": "201",
   "data": "ok"
+}
+```
+
+## <span id="13">日志接口</span>
+---
+
+**metricName参考：**
+
+```
+[
+  "network/tx",
+  "network/tx_errors_rate",
+  "memory/working_set",
+  "network/tx_errors",
+  "cpu/limit",
+  "memory/major_page_faults",
+  "memory/page_faults_rate",
+  "cpu/request",
+  "network/rx_rate",
+  "cpu/usage_rate",
+  "memory/limit",
+  "memory/usage",
+  "memory/cache",
+  "network/rx_errors",
+  "network/rx_errors_rate",
+  "network/tx_rate",
+  "memory/major_page_faults_rate",
+  "cpu/usage",
+  "network/rx",
+  "memory/rss",
+  "memory/page_faults",
+  "memory/request",
+  "uptime"
+ ]
+
+```
+
+#### <span id="13.2">获取容器cpu实时使用情况</span>
+
+
+URI: ApiURI/api/v1//{namespace}/metrics/{name}/{metric}/{type}
+
+Method: GET
+
+**参数说明**
+
+- namespace: 镜像所属租户   必须字段
+- name: 容器名称 必须字段
+- metric: 粒度名称   {metric}/{type} 组成metricName
+- type: 操作类型 {metric}/{type} 组成metricName
+
+**请求**
+
+- ApiURI/api/v1/kube-system/metrics/calico-node-r116q/memory/usage
+
+
+**响应**
+
+```
+{
+  "apiversion": "v1",
+  "status": "200",
+  "data": {
+    "metrics": {
+      "latestTimestamp": "2017-06-09T08:19:00Z",
+      "metrics": [
+        {
+          "timestamp": "2017-06-09T08:05:00Z",
+          "value": 69935104
+        },
+        {
+          "timestamp": "2017-06-09T08:06:00Z",
+          "value": 69951488
+        },
+        {
+          "timestamp": "2017-06-09T08:07:00Z",
+          "value": 69963776
+        },
+        {
+          "timestamp": "2017-06-09T08:08:00Z",
+          "value": 69980160
+        },
+        {
+          "timestamp": "2017-06-09T08:09:00Z",
+          "value": 69992448
+        },
+        {
+          "timestamp": "2017-06-09T08:10:00Z",
+          "value": 70004736
+        },
+        {
+          "timestamp": "2017-06-09T08:11:00Z",
+          "value": 70021120
+        },
+        {
+          "timestamp": "2017-06-09T08:12:00Z",
+          "value": 70017024
+        },
+        {
+          "timestamp": "2017-06-09T08:13:00Z",
+          "value": 70926336
+        },
+        {
+          "timestamp": "2017-06-09T08:14:00Z",
+          "value": 70934528
+        },
+        {
+          "timestamp": "2017-06-09T08:15:00Z",
+          "value": 70959104
+        },
+        {
+          "timestamp": "2017-06-09T08:16:00Z",
+          "value": 70975488
+        },
+        {
+          "timestamp": "2017-06-09T08:17:00Z",
+          "value": 70987776
+        },
+        {
+          "timestamp": "2017-06-09T08:18:00Z",
+          "value": 71131136
+        },
+        {
+          "timestamp": "2017-06-09T08:19:00Z",
+          "value": 71016448
+        }
+      ]
+    }
+  }
+}
+```
+
+**请求**
+
+- ApiURI/api/v1/kube-system/metrics/calico-node-r116q/cpu/usage
+
+
+**响应**
+
+```
+{
+  "apiversion": "v1",
+  "status": "200",
+  "data": {
+    "metrics": {
+      "latestTimestamp": "2017-06-09T08:18:00Z",
+      "metrics": [
+        {
+          "timestamp": "2017-06-09T08:16:00Z",
+          "value": 9210518
+        },
+        {
+          "timestamp": "2017-06-09T08:17:00Z",
+          "value": 9210518
+        },
+        {
+          "timestamp": "2017-06-09T08:18:00Z",
+          "value": 9210518
+        }
+      ]
+    }
+  }
 }
 ```
 

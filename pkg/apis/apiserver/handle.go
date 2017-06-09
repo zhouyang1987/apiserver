@@ -36,6 +36,11 @@ func InstallApi(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/containers", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/containers/", "OPTIONS", Option)
 
+	//install metrics's api handle
+	r.RegisterHttpHandler(router, "/{namespace}/metrics/{name}/{metric}/{type}", "OPTIONS", Option)
+	r.RegisterHttpHandler(router, "/{namespace}/metrics/{name}/{metric}/{type}", "GET", GetMetrics)
+	// r.RegisterHttpHandler(router, "/{namespace}/pod/", "OPTIONS", Option)
+
 }
 
 func Option(request *http.Request) (string, interface{}) {
