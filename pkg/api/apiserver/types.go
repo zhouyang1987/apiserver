@@ -26,7 +26,7 @@ type Service struct {
 	Status        int            `json:"status,omitempty"`
 	External      string         `json:"external,omitempty"`
 	LoadbalanceIp string         `json:"loadbalanceIp,omitempty"`
-	Config        *ServiceConfig `json:"config,omitempty`
+	Config        *ServiceConfig `json:"config,omitempty"`
 	Items         []*Container   `json:"containers,omitempty"`
 	AppId         uint           `json:"appId,omitempty"`
 }
@@ -47,7 +47,7 @@ type Container struct {
 	Image     string           `json:"image,omitempty"`
 	Status    int              `json:"status,omitempty"`
 	Internal  string           `json:"internal,omitempty"`
-	Config    *ContainerConfig `json:"config,omitempty`
+	Config    *ContainerConfig `json:"config,omitempty"`
 	ServiceId uint
 }
 
@@ -118,4 +118,17 @@ type Logs struct {
 	UserName  string    `json:",omitempty"`
 	AppName   string    `json:",omitempty"`
 	EventType string    `json:",omitempty"`
+}
+
+type ScaleOption struct {
+	ServiceInstanceCnt int `json:"serviceInstanceCnt"`
+}
+
+type ExpansionOption struct {
+	Cpu    string `json:"cpu"`
+	Memory string `json:"memory"`
+}
+
+type RollOption struct {
+	Image string `json:"image"`
 }

@@ -176,6 +176,20 @@ func DeleteResource(param interface{}) error {
 		}
 		log.Noticef("deployment [%v] was deleted]", deploy.Name)
 		return nil
+	case *v1.Pod:
+		backend := new(metav1.DeletionPropagation)
+		*backend = metav1.DeletePropagationForeground
+		pod := param.(*v1.Pod)
+		err := client.K8sClient.
+			CoreV1().
+			Pods(pod.Namespace).
+			Delete(pod.Name, &metav1.DeleteOptions{PropagationPolicy: backend})
+		if err != nil {
+			log.Errorf("delete pod [%v] err:%v", pod.Name, err)
+			return err
+		}
+		log.Noticef("pod [%v] was deleted]", pod.Name)
+		return nil
 	}
 	return nil
 }
@@ -272,6 +286,14 @@ func UpdateResouce(param interface{}) error {
 		return nil
 	}
 	return nil
+}
+
+func GetPods(namespace, deployName string) ([]v1.Pod, error) {
+	list, err := client.K8sClient.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: "name=" + deployName})
+	if err != nil {
+		return []v1.Pod{}, err
+	}
+	return list.Items, nil
 }
 
 func CreateService(svc *v1.Service) (*v1.Service, error) {

@@ -141,7 +141,7 @@
 
 查询应用。
 
-URI: ApiURI/{namespace}/apps
+URI: ApiURI/api/v1/{namespace}/apps?pageCnt=10&pageNum=0
 
 Method: GET
 
@@ -158,70 +158,7 @@ Method: GET
 - JSON:
 
 ```text
-{
-  "apiversion": "v1",
-  "status": "200",
-  "data": [
-    {
-      "id": 2,
-      "createAt": "2017-06-06T01:01:15+08:00",
-      "nmae": "nginx",
-      "nameSpace": "huangjia",
-      "description": "this is a test nginx",
-      "serviceCount": 1,
-      "intanceCount": 1,
-      "external": "http://192.168.99.109:30976",
-      "services": [
-        {
-          "id": 2,
-          "createAt": "2017-06-06T01:01:15+08:00",
-          "name": "nginx-test",
-          "image": "nginx",
-          "instanceCount": 1,
-          "external": "http://192.168.99.109:30976",
-          "loadbalanceIp": "192.168.99.109",
-          "Config": null,
-          "containers": [
-            {
-              "id": 2,
-              "createAt": "2017-06-06T01:01:15+08:00",
-              "name": "test-1-123213",
-              "image": "nginx",
-              "Config": {
-                "id": 2,
-                "createAt": "2017-06-06T01:01:15+08:00",
-                "base": {
-                  "id": 1,
-                  "createAt": "2017-06-06T00:38:05+08:00",
-                  "cpu": "12Mi",
-                  "memory": "12m",
-                  "type": 1,
-                  "ServiceConfigId": 2
-                },
-                "config": {
-                  "id": 1,
-                  "createAt": "2017-06-06T00:38:05+08:00",
-                  "name": "nginx-test",
-                  "content": "{\"appName\":\"nginx\"}",
-                  "containerPath": "/opt",
-                  "ServiceConfigId": 2
-                },
-                "super": {
-                  "id": 1,
-                  "createAt": "2017-06-06T00:38:05+08:00",
-                  "ServiceConfigId": 2
-                },
-                "ContainerId": 2
-              },
-              "ServiceId": 2
-            }
-          ],
-          "appId": 2
-        }
-      ]
-    }
-  ]
-}
+
 ```
 
 ### <span id="10.2">创建应用</span>

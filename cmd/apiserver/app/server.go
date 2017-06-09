@@ -43,13 +43,6 @@ func NewApiServer() *Apiserver {
 	}
 }
 
-/*func Run(server *Apiserver) error {
-	wsContainer := restful.NewContainer()
-	application.Register(wsContainer)
-	log.Infof("starting apiserver and listen on : %v", fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort))
-	return http.ListenAndServe(fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort), wsContainer)
-}*/
-
 func Run(server *Apiserver) error {
 	root := mux.NewRouter()
 	api := root.PathPrefix("/api/v1").Subrouter()
@@ -61,22 +54,5 @@ func Run(server *Apiserver) error {
 }
 
 func installApiGroup(router *mux.Router) {
-	// a.Register(router)
-	apiserver.Register(router)
+	apiserver.InstallApi(router)
 }
-
-// func installNodeApi(router *mux.Router) {
-
-// }
-
-// func installAppApi(router *mux.Router) {
-
-// }
-
-// func installContainerApi(router *mux.Router) {
-
-// }
-
-// func installDeploymentApi(router *mux.Router) {
-
-// }
