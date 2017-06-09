@@ -108,7 +108,7 @@ type Port struct {
 	CreatedAt     time.Time `json:"createAt"`
 	ContainerPort int       `json:"containerPort,omitempty"`
 	ServicePort   int       `json:"servicePort,omitempty"`
-	Protocol      string    `json:"protocol,omitempty""`
+	Protocol      string    `json:"protocol,omitempty"`
 	SuperConfigId uint
 }
 

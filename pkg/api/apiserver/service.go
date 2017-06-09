@@ -37,22 +37,22 @@ func QueryServices(serviceName string, pageCnt, pageNum int, appId uint) (list [
 			svc.Items = containerList
 			for _, container := range containerList {
 				db.Find(config, ContainerConfig{ContainerId: container.ID})
-				container.Config = config
+				// container.Config = config
 
 				db.First(base, BaseConfig{ServiceConfigId: config.ID})
 				db.Find(&volumes, Volume{BaseConfigId: base.ID})
 				base.Volumes = volumes
-				config.BaseConfig = base
+				// config.BaseConfig = base
 
 				db.First(configmap, ConfigMap{ServiceConfigId: config.ID})
-				config.ConfigMap = configmap
+				// config.ConfigMap = configmap
 
 				db.First(superConfig, SuperConfig{ServiceConfigId: config.ID})
 				db.Find(&envs, Env{SuperConfigId: superConfig.ID})
 				db.Find(&ports, Port{SuperConfigId: superConfig.ID})
 				superConfig.Envs = envs
 				superConfig.Ports = ports
-				config.SuperConfig = superConfig
+				// config.SuperConfig = superConfig
 			}
 			db.First(serviceConfig, ServiceConfig{ServiceId: svc.ID})
 			serviceConfig.BaseConfig = base
