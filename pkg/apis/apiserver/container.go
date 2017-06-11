@@ -8,10 +8,8 @@ import (
 	"apiserver/pkg/api/apiserver"
 	"apiserver/pkg/resource"
 	k8sclient "apiserver/pkg/resource/common"
-	"apiserver/pkg/resource/sync"
 	r "apiserver/pkg/router"
-
-	// "apiserver/pkg/util/log"
+	"apiserver/pkg/storage/cache"
 
 	"github.com/gorilla/mux"
 )
@@ -32,7 +30,7 @@ func RedeployContainer(request *http.Request) (string, interface{}) {
 	svc := apiserver.QueryServiceById(container.ServiceId)
 	namespace := mux.Vars(request)["namespace"]
 
-	if _, exsit := sync.ListDeployment[namespace][svc.Name]; !exsit {
+	if !cache.ExsitResource(namespace, svc.Name, resource.ResourceKindDeployment) {
 		return r.StatusNotFound, "service named " + svc.Name + ` does't exist`
 	}
 

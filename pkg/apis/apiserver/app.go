@@ -14,8 +14,8 @@ import (
 	"apiserver/pkg/resource/configMap"
 	"apiserver/pkg/resource/deployment"
 	"apiserver/pkg/resource/service"
-	"apiserver/pkg/resource/sync"
 	r "apiserver/pkg/router"
+	"apiserver/pkg/storage/cache"
 	"apiserver/pkg/util/parseUtil"
 
 	"github.com/gorilla/mux"
@@ -46,11 +46,11 @@ func CreateApp(request *http.Request) (string, interface{}) {
 		return r.StatusBadRequest, err
 	}
 
-	k8ssvc := service.NewService(app)
-	if k8sclient.ExsitResource(k8ssvc) {
+	if cache.ExsitResource(app.UserName, app.Items[0].Name, resource.ResourceKindService) {
 		return r.StatusForbidden, "the service exist"
 	}
 
+	k8ssvc := service.NewService(app)
 	svc, err := k8sclient.CreateService(k8ssvc)
 	if err != nil {
 		return r.StatusInternalServerError, err
@@ -64,9 +64,6 @@ func CreateApp(request *http.Request) (string, interface{}) {
 	}
 
 	k8sDeploy := deployment.NewDeployment(app)
-	if k8sclient.ExsitResource(k8sDeploy) {
-		return r.StatusForbidden, "the deployment exist"
-	}
 	if err = k8sclient.CreateResource(k8sDeploy); err != nil {
 		k8sclient.DeleteResource(svc)
 		return r.StatusInternalServerError, err
@@ -97,23 +94,33 @@ func CreateApp(request *http.Request) (string, interface{}) {
 
 func DeleteApp(request *http.Request) (string, interface{}) {
 	id, _ := strconv.ParseUint(mux.Vars(request)["id"], 10, 64)
+	namespace := mux.Vars(request)["namespace"]
 	app := apiserver.QueryAppById(uint(id))
-	appName := app.Items[0].Name
-	namespace := app.UserName
-	rc, exsit := sync.ListDeployment[namespace][appName]
-	if !exsit {
-		return r.StatusNotFound, "application named " + appName + ` does't exist`
-	}
 
-	if err := k8sclient.DeleteResource(&rc); err != nil {
-		return r.StatusInternalServerError, "delete application err: " + err.Error()
-	}
-	svc := sync.ListService[namespace][appName]
-	if &svc == nil {
-		return r.StatusNotFound, "application named " + appName + `does't exist`
-	}
-	if err := k8sclient.DeleteResource(&svc); err != nil {
-		return r.StatusInternalServerError, "delete application err: " + err.Error()
+	for _, service := range app.Items {
+		appName := service.Name
+
+		if !cache.ExsitResource(namespace, appName, resource.ResourceKindDeployment) {
+			return r.StatusNotFound, "application named " + appName + ` does't exist`
+		}
+		if err := k8sclient.DeleteResource(cache.Store.DeploymentCache.List[namespace][appName]); err != nil {
+			return r.StatusInternalServerError, "delete application err: " + err.Error()
+		}
+
+		if !cache.ExsitResource(namespace, appName, resource.ResourceKindConfigMap) {
+			return r.StatusNotFound, "configMap named " + appName + ` does't exist`
+		}
+
+		if err := k8sclient.DeleteResource(cache.Store.ConfigMapCache.List[namespace][appName]); err != nil {
+			return r.StatusInternalServerError, "delete application err: " + err.Error()
+		}
+
+		if !cache.ExsitResource(namespace, appName, resource.ResourceKindService) {
+			return r.StatusNotFound, "application named " + appName + ` does't exist`
+		}
+		if err := k8sclient.DeleteResource(cache.Store.ServiceCache.List[namespace][appName]); err != nil {
+			return r.StatusInternalServerError, "delete application err: " + err.Error()
+		}
 	}
 
 	apiserver.DeleteApp(app)
@@ -131,10 +138,11 @@ func UpdateAppConfig(request *http.Request) (string, interface{}) {
 	namespace := mux.Vars(request)["namespace"]
 	verb := mux.Vars(request)["verb"] //verb the action of app , scale or expansion or roll
 
-	deploy, exsit := sync.ListDeployment[namespace][appName]
-	if !exsit {
-		return r.StatusNotFound, "application named " + appName + ` does't exist`
+	if !cache.ExsitResource(namespace, appName, resource.ResourceKindDeployment) {
+		return r.StatusNotFound, "service named " + appName + ` does't exist`
 	}
+	deploy := cache.Store.DeploymentCache.List[namespace][appName]
+
 	if verb == "scale" {
 		deploy.Spec.Replicas = parseUtil.IntToInt32Pointer(app.Items[0].InstanceCount)
 	}
@@ -177,10 +185,11 @@ func StopOrStartOrRedeployApp(request *http.Request) (string, interface{}) {
 		appName := svc.Name
 		namespace := mux.Vars(request)["namespace"]
 		verb := mux.Vars(request)["verb"] //verb the action of app , start or stop
-		deploy, exsit := sync.ListDeployment[namespace][appName]
-		if !exsit {
+
+		if !cache.ExsitResource(namespace, appName, resource.ResourceKindDeployment) {
 			return r.StatusNotFound, "service named " + appName + ` does't exist`
 		}
+		deploy := cache.Store.DeploymentCache.List[namespace][appName]
 		if verb == "stop" {
 			deploy.Spec.Replicas = parseUtil.IntToInt32Pointer(0)
 			if err := k8sclient.UpdateResouce(&deploy); err != nil {

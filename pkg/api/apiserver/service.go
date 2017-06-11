@@ -71,7 +71,8 @@ func InsertService(svc *Service) {
 }
 
 func DeleteService(svc *Service) {
-	db.Delete(svc, svc.ID)
+	db.Delete(svc)
+
 	svcCfg := svc.Config
 	db.Delete(svcCfg, "service_id=?", svc.ID)
 
@@ -96,7 +97,8 @@ func DeleteService(svc *Service) {
 	}
 
 	for _, c := range svc.Items {
-		db.Delete(c, "container_id=?", svc.ID)
+		db.Delete(c)
+		db.Delete(c.Config, "container_id=?", c.ID)
 	}
 }
 

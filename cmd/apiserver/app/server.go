@@ -21,11 +21,10 @@ import (
 	"apiserver/pkg/apis/apiserver"
 	"apiserver/pkg/componentconfig"
 	"apiserver/pkg/configz"
-	"apiserver/pkg/resource/sync"
+	"apiserver/pkg/storage/cache"
 	"apiserver/pkg/util/log"
 
 	"github.com/gorilla/mux"
-	// "github.com/emicklei/go-restful"
 )
 
 type Apiserver struct {
@@ -49,7 +48,7 @@ func Run(server *Apiserver) error {
 	installApiGroup(api)
 	http.Handle("/", root)
 	log.Infof("starting apiserver and listen on : %v", fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort))
-	go sync.Sync()
+	go cache.List()
 	return http.ListenAndServe(fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort), nil)
 }
 

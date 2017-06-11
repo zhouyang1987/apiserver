@@ -92,82 +92,89 @@ func UpdateApp(app *App) {
 
 func DeleteApp(app *App) {
 	db.Delete(app)
-	svc := app.Items[0]
-	db.Delete(svc, "app_id=?", app.ID)
+	for _, svc := range app.Items {
+		db.Delete(svc, "app_id=?", app.ID)
 
-	svcCfg := svc.Config
-	db.Delete(svcCfg, "service_id=?", svc.ID)
+		svcCfg := svc.Config
+		db.Delete(svcCfg, "service_id=?", svc.ID)
 
-	svcCfgBase := svcCfg.BaseConfig
-	db.Delete(svcCfgBase, "service_config_id=?", svcCfg.ID)
+		svcCfgBase := svcCfg.BaseConfig
+		db.Delete(svcCfgBase, "service_config_id=?", svcCfg.ID)
 
-	for _, volume := range svcCfgBase.Volumes {
-		db.Delete(volume, "base_config_id=?", svcCfgBase.ID)
-	}
+		for _, volume := range svcCfgBase.Volumes {
+			db.Delete(volume, "base_config_id=?", svcCfgBase.ID)
+		}
 
-	svcCfgMap := svcCfg.ConfigMap
-	db.Delete(svcCfgMap, "service_config_id=?", svcCfg.ID)
+		svcCfgMap := svcCfg.ConfigMap
+		db.Delete(svcCfgMap, "service_config_id=?", svcCfg.ID)
 
-	svcSuper := svcCfg.SuperConfig
-	db.Delete(svcSuper, "service_config_id=?", svcCfg.ID)
+		svcSuper := svcCfg.SuperConfig
+		db.Delete(svcSuper, "service_config_id=?", svcCfg.ID)
 
-	for _, env := range svcSuper.Envs {
-		db.Delete(env, "super_config_id=?", svcSuper.ID)
-	}
-	for _, port := range svcSuper.Ports {
-		db.Delete(port, "super_config_id=?", svcSuper.ID)
-	}
+		for _, env := range svcSuper.Envs {
+			db.Delete(env, "super_config_id=?", svcSuper.ID)
+		}
+		for _, port := range svcSuper.Ports {
+			db.Delete(port, "super_config_id=?", svcSuper.ID)
+		}
 
-	for _, c := range svc.Items {
-		db.Delete(c, "container_ip=?", svc.ID)
+		for _, c := range svc.Items {
+			db.Delete(c)
+			db.Delete(c.Config, "container_id=?", c.ID)
+		}
 	}
 }
 
 func QueryAppById(id uint) *App {
 	app := &App{}
 	db.First(app, id)
+
 	var (
 		svcList       []*Service
 		containerList []*Container
-		config        = &ContainerConfig{}
-		base          = &BaseConfig{}
-		configmap     = &ConfigMap{}
-		superConfig   = &SuperConfig{}
-		volumes       []*Volume
-		envs          []*Env
-		ports         []*Port
 	)
 	db.Find(&svcList, Service{AppId: app.ID})
 	app.Items = svcList
 	for _, svc := range svcList {
+		config := &ServiceConfig{}
+		var (
+			base        = &BaseConfig{}
+			configmap   = &ConfigMap{}
+			superConfig = &SuperConfig{}
+			volumes     []*Volume
+			envs        []*Env
+			ports       []*Port
+		)
+
 		db.Find(&containerList, Container{ServiceId: svc.ID})
-		svc.Items = containerList
-		for _, container := range containerList {
-			db.Find(config, ContainerConfig{ContainerId: container.ID})
-			container.Config = config
-
-			db.First(base, BaseConfig{ServiceConfigId: config.ID})
-			db.Find(&volumes, Volume{BaseConfigId: base.ID})
-			base.Volumes = volumes
-			config.BaseConfig = base
-
-			db.First(configmap, ConfigMap{ServiceConfigId: config.ID})
-			config.ConfigMap = configmap
-
-			db.First(superConfig, SuperConfig{ServiceConfigId: config.ID})
-			db.Find(&envs, Env{SuperConfigId: superConfig.ID})
-			db.Find(&ports, Port{SuperConfigId: superConfig.ID})
-			superConfig.Envs = envs
-			superConfig.Ports = ports
-			config.SuperConfig = superConfig
-
-			svc.Config = &ServiceConfig{
-				BaseConfig:  config.BaseConfig,
-				ConfigMap:   config.ConfigMap,
-				SuperConfig: config.SuperConfig,
-			}
+		for _, c := range containerList {
+			contaienrConfig := &ContainerConfig{}
+			db.First(contaienrConfig, ContainerConfig{ContainerId: c.ID})
+			c.Config = contaienrConfig
 		}
+		svc.Items = containerList
+
+		db.Find(config, ServiceConfig{ServiceId: svc.ID})
+		db.First(base, BaseConfig{ServiceConfigId: config.ID})
+		db.Find(&volumes, Volume{BaseConfigId: base.ID})
+		base.Volumes = volumes
+		config.BaseConfig = base
+
+		db.First(configmap, ConfigMap{ServiceConfigId: config.ID})
+		config.ConfigMap = configmap
+
+		db.First(superConfig, SuperConfig{ServiceConfigId: config.ID})
+		db.Find(&envs, Env{SuperConfigId: superConfig.ID})
+		db.Find(&ports, Port{SuperConfigId: superConfig.ID})
+		superConfig.Envs = envs
+		superConfig.Ports = ports
+		config.SuperConfig = superConfig
+
+		svc.Config = config
+		svc.InstanceCount = len(containerList)
+
 	}
+	app.ServiceCount = len(svcList)
 	return app
 }
 

@@ -80,17 +80,17 @@ func CreateResource(param interface{}) error {
 //ExsitResource decide namesapce,service,replicationController exsit or not by name;false is not exsit,true exsit
 func ExsitResource(param interface{}) bool {
 	switch param.(type) {
-	case *v1.Namespace:
+	case v1.Namespace:
 		_, err := client.K8sClient.
 			CoreV1().
 			Namespaces().
-			Get(param.(*v1.Namespace).Name, metav1.GetOptions{})
+			Get(param.(v1.Namespace).Name, metav1.GetOptions{})
 		if err != nil {
 			return false
 		}
 		return true
-	case *v1.Service:
-		svc := param.(*v1.Service)
+	case v1.Service:
+		svc := param.(v1.Service)
 		_, err := client.K8sClient.
 			CoreV1().
 			Services(svc.Namespace).
@@ -99,8 +99,19 @@ func ExsitResource(param interface{}) bool {
 			return false
 		}
 		return true
-	case *v1.ReplicationController:
-		rc := param.(*v1.ReplicationController)
+
+	case v1.ConfigMap:
+		cfgMap := param.(v1.Service)
+		_, err := client.K8sClient.
+			CoreV1().
+			ConfigMaps(cfgMap.Namespace).
+			Get(cfgMap.Name, metav1.GetOptions{})
+		if err != nil {
+			return false
+		}
+		return true
+	case v1.ReplicationController:
+		rc := param.(v1.ReplicationController)
 		_, err := client.K8sClient.
 			CoreV1().
 			ReplicationControllers(rc.Namespace).
@@ -109,7 +120,7 @@ func ExsitResource(param interface{}) bool {
 			return false
 		}
 		return true
-	case *extensions.Deployment:
+	case extensions.Deployment:
 		deploy := param.(*extensions.Deployment)
 		_, err := client.K8sClient.
 			ExtensionsV1beta1().
@@ -126,8 +137,8 @@ func ExsitResource(param interface{}) bool {
 //DeleteResource delete namespace,service,replicationController
 func DeleteResource(param interface{}) error {
 	switch param.(type) {
-	case *v1.Namespace:
-		ns := param.(*v1.Namespace)
+	case v1.Namespace:
+		ns := param.(v1.Namespace)
 		err := client.K8sClient.
 			CoreV1().
 			Namespaces().
@@ -138,8 +149,8 @@ func DeleteResource(param interface{}) error {
 		}
 		log.Noticef("namespace [%v] was deleted", ns.Name)
 		return nil
-	case *v1.Service:
-		svc := param.(*v1.Service)
+	case v1.Service:
+		svc := param.(v1.Service)
 		err := client.K8sClient.
 			CoreV1().
 			Services(svc.Namespace).
@@ -150,8 +161,21 @@ func DeleteResource(param interface{}) error {
 		}
 		log.Noticef("service [%v] was deleted]", svc.Name)
 		return nil
-	case *v1.ReplicationController:
-		rc := param.(*v1.ReplicationController)
+
+	case v1.ConfigMap:
+		cfgMap := param.(v1.ConfigMap)
+		err := client.K8sClient.
+			CoreV1().
+			ConfigMaps(cfgMap.Namespace).
+			Delete(cfgMap.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			log.Errorf("delete configMap [%v] err:%v", cfgMap.Name, err)
+			return err
+		}
+		log.Noticef("configMap [%v] was deleted]", cfgMap.Name)
+		return nil
+	case v1.ReplicationController:
+		rc := param.(v1.ReplicationController)
 		err := client.K8sClient.
 			CoreV1().
 			ReplicationControllers(rc.Namespace).
@@ -162,10 +186,10 @@ func DeleteResource(param interface{}) error {
 		}
 		log.Noticef("replication [%v] is delete]", rc.Name)
 		return nil
-	case *extensions.Deployment:
+	case extensions.Deployment:
 		backend := new(metav1.DeletionPropagation)
 		*backend = metav1.DeletePropagationForeground
-		deploy := param.(*extensions.Deployment)
+		deploy := param.(extensions.Deployment)
 		err := client.K8sClient.
 			ExtensionsV1beta1().
 			Deployments(deploy.Namespace).
@@ -176,10 +200,10 @@ func DeleteResource(param interface{}) error {
 		}
 		log.Noticef("deployment [%v] was deleted]", deploy.Name)
 		return nil
-	case *v1.Pod:
+	case v1.Pod:
 		backend := new(metav1.DeletionPropagation)
 		*backend = metav1.DeletePropagationForeground
-		pod := param.(*v1.Pod)
+		pod := param.(v1.Pod)
 		err := client.K8sClient.
 			CoreV1().
 			Pods(pod.Namespace).
