@@ -59,7 +59,6 @@ func QueryApps(namespace, appName string, pageCnt, pageNum int) (list []*App, to
 			config.SuperConfig = superConfig
 
 			svc.Config = config
-			svc.InstanceCount = len(containerList)
 
 		}
 		app.ServiceCount = len(svcList)
@@ -171,8 +170,6 @@ func QueryAppById(id uint) *App {
 		config.SuperConfig = superConfig
 
 		svc.Config = config
-		svc.InstanceCount = len(containerList)
-
 	}
 	app.ServiceCount = len(svcList)
 	return app

@@ -153,7 +153,7 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 		for _, container := range svc.Items {
 			apiserver.DeleteContainer(container)
 		}
-		ChangeServiceStatus(svc, namespace)
+		apiserver.UpdateService(svc)
 	}
 
 	if verb == "expansion" {
@@ -209,7 +209,7 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 		if err := k8sclient.UpdateResouce(&deploy); err != nil {
 			return r.StatusInternalServerError, "rolling updte application named " + svc.Name + ` failed`
 		}
-		ChangeServiceStatus(svc, namespace)
+		apiserver.UpdateService(svc)
 	}
 
 	return r.StatusCreated, "ok"
@@ -233,6 +233,7 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 		}
 
 		svc.Status = resource.AppStop
+		apiserver.UpdateService(svc)
 		for _, container := range svc.Items {
 			apiserver.DeleteContainer(container)
 		}
@@ -245,9 +246,10 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 		}
 
 		svc.Status = resource.AppRunning
-		if err := ChangeServiceStatus(svc, namespace); err != nil {
-			return r.StatusInternalServerError, err
-		}
+		apiserver.UpdateService(svc)
+		// if err := ChangeServiceStatus(svc, namespace); err != nil {
+		// 	return r.StatusInternalServerError, err
+		// }
 
 	}
 	if verb == "redeploy" {
@@ -256,17 +258,14 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 			return r.StatusInternalServerError, err
 		}
 		for _, pod := range pods {
-			k8sclient.DeleteResource(&pod)
-		}
-
-		for _, container := range svc.Items {
-			apiserver.DeleteContainer(container)
+			k8sclient.DeleteResource(pod)
 		}
 
 		svc.Status = resource.AppRunning
-		if err := ChangeServiceStatus(svc, namespace); err != nil {
-			return r.StatusInternalServerError, err
-		}
+		apiserver.UpdateService(svc)
+		// if err := ChangeServiceStatus(svc, namespace); err != nil {
+		// 	return r.StatusInternalServerError, err
+		// }
 	}
 	return r.StatusCreated, "ok"
 }

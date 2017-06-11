@@ -5,18 +5,18 @@ func QueryContainers(containerName string, pageCnt, pageNum int, serviceId uint)
 	if serviceId == 0 {
 		if containerName != "" {
 			db.Where("name like ? ", `%`+containerName+`%`).Offset(pageCnt * pageNum).Limit(pageCnt).Order("name desc").Find(&list)
-			db.Model(new(Service)).Where("name like ?", containerName).Count(&total)
+			db.Model(new(Container)).Where("name like ?", containerName).Count(&total)
 		} else {
 			db.Offset(pageCnt * pageNum).Limit(pageCnt).Order("name desc").Find(&list)
-			db.Model(new(Service)).Count(&total)
+			db.Model(new(Container)).Count(&total)
 		}
 	} else {
 		if containerName != "" {
 			db.Where("name like ? and service_id=?", `%`+containerName+`%`, serviceId).Offset(pageCnt * pageNum).Limit(pageCnt).Order("name desc").Find(&list)
-			db.Model(new(Service)).Where("name like ? and service_id=?", `%`+containerName+`%`, serviceId).Count(&total)
+			db.Model(new(Container)).Where("name like ? and service_id=?", `%`+containerName+`%`, serviceId).Count(&total)
 		} else {
 			db.Where("service_id=?", serviceId).Offset(pageCnt * pageNum).Limit(pageCnt).Order("name desc").Find(&list)
-			db.Model(new(Service)).Where("service_id=?", serviceId).Count(&total)
+			db.Model(new(Container)).Where("service_id=?", serviceId).Count(&total)
 		}
 	}
 
@@ -57,10 +57,10 @@ func QueryContainerById(id uint) *Container {
 	return container
 }
 
-func QueryContainerByName(name string) *Container {
+func QueryContainerByName(name string) (*Container, bool) {
 	container := &Container{}
-	db.First(container, "name=?", name)
-	return container
+	not := db.Where("name=?", name).First(container).RecordNotFound()
+	return container, not
 }
 
 func UpdateContainer(container *Container) {
@@ -72,7 +72,7 @@ func DeleteContainer(container *Container) {
 }
 
 func ExistContainer(container *Container) bool {
-	return !db.First(container).RecordNotFound()
+	return db.First(container).RecordNotFound()
 }
 
 func InsertContainer(container *Container) {

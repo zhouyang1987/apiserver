@@ -79,7 +79,7 @@ func List() {
 }
 
 func Watch() {
-	watcher, err := client.K8sClient.CoreV1().Pods("").Watch(metav1.ListOptions{})
+	watcher, err := client.K8sClient.CoreV1().Pods("").Watch(resource.ListEverything)
 	if err != nil {
 		log.Errorf("watch the pod of deployment err:%v", err)
 	} else {
@@ -87,10 +87,9 @@ func Watch() {
 		for {
 			select {
 			case event := <-eventChan:
+				log.Debug(event.Type)
 				if event.Object != nil {
 					pod := event.Object.(*v1.Pod)
-
-					var container *apiserver.Container
 
 					apps, _ := apiserver.QueryApps(pod.Namespace, "", 1000000, 0)
 
@@ -99,47 +98,67 @@ func Watch() {
 						for _, svc := range svcs {
 							if len(event.Object.(*v1.Pod).Status.ContainerStatuses) > 0 && event.Type == watch.Modified {
 								if event.Object.(*v1.Pod).Status.ContainerStatuses[0].State.Running != nil {
-									log.Debug("Running==================")
-									app.AppStatus = resource.AppRunning
-									svc.Status = resource.AppRunning
-									container = &apiserver.Container{
-										Name:      pod.ObjectMeta.Name,
-										Image:     pod.Spec.Containers[0].Image,
-										Internal:  fmt.Sprintf("%v:%v", pod.Status.PodIP, pod.Spec.Containers[0].Ports[0].HostPort),
-										Status:    resource.AppRunning,
-										ServiceId: svc.ID,
+									log.Debug("Running==================" + pod.ObjectMeta.Name)
+									if c, notfound := apiserver.QueryContainerByName(pod.Name); notfound {
+										log.Debug("1234567890234567890")
+										container := &apiserver.Container{
+											Name:      pod.ObjectMeta.Name,
+											Image:     pod.Spec.Containers[0].Image,
+											Internal:  fmt.Sprintf("%v:%v", pod.Status.PodIP, pod.Spec.Containers[0].Ports[0].HostPort),
+											Status:    resource.AppRunning,
+											ServiceId: svc.ID,
+										}
+										apiserver.InsertContainer(container)
+									} else {
+										c.Status = resource.AppRunning
+										c.Internal = fmt.Sprintf("%v:%v", pod.Status.PodIP, pod.Spec.Containers[0].Ports[0].HostPort)
+										apiserver.UpdateContainer(c)
 									}
-									apiserver.UpdateContainer(container)
-									apiserver.UpdateApp(app)
-
 								}
 
-								if event.Object.(*v1.Pod).Status.ContainerStatuses[0].State.Waiting != nil {
-									log.Debug("Waiting==================")
-									container = &apiserver.Container{
-										Name:      pod.ObjectMeta.Name,
-										Image:     pod.Spec.Containers[0].Image,
-										Internal:  fmt.Sprintf("%v:%v", pod.Status.PodIP, pod.Spec.Containers[0].Ports[0].HostPort),
-										Status:    resource.AppBuilding,
-										ServiceId: svc.ID,
-									}
-									apiserver.InsertContainer(container)
-									apiserver.UpdateApp(app)
-								}
+								// if event.Object.(*v1.Pod).Status.ContainerStatuses[0].State.Waiting != nil {
+								// 	log.Debug("Waiting==================" + pod.Name)
+								// 	if c, notfound := apiserver.QueryContainerByName(pod.Name); notfound {
+								// 		container := &apiserver.Container{
+								// 			Name:      pod.ObjectMeta.Name,
+								// 			Image:     pod.Spec.Containers[0].Image,
+								// 			Internal:  fmt.Sprintf("%v:%v", pod.Status.PodIP, pod.Spec.Containers[0].Ports[0].HostPort),
+								// 			Status:    resource.AppBuilding,
+								// 			ServiceId: svc.ID,
+								// 		}
+								// 		// apiserver.UpdateApp(app)
+								// 		apiserver.InsertContainer(container)
+								// 	} else {
+								// 		c.Status = resource.AppBuilding
+								// 		c.Internal = fmt.Sprintf("%v:%v", pod.Status.PodIP, pod.Spec.Containers[0].Ports[0].HostPort)
+								// 		apiserver.UpdateContainer(c)
+								// 	}
 
-								if event.Object.(*v1.Pod).Status.ContainerStatuses[0].State.Terminated != nil {
-									log.Debug("Terminated==================")
-									app.AppStatus = resource.AppFailed
-									svc.Status = resource.AppFailed
-									container = &apiserver.Container{
-										Name:      pod.ObjectMeta.Name,
-										Image:     pod.Spec.Containers[0].Image,
-										Internal:  fmt.Sprintf("%v:%v", pod.Status.PodIP, pod.Spec.Containers[0].Ports[0].HostPort),
-										Status:    resource.AppFailed,
-										ServiceId: svc.ID,
+								// }
+
+								/*if event.Object.(*v1.Pod).Status.ContainerStatuses[0].State.Terminated != nil {
+									log.Debugf("Terminated==================%v", pod.ObjectMeta.Name)
+									// app.AppStatus = resource.AppFailed
+									// svc.Status = resource.AppFailed
+									// apiserver.UpdateApp(app)
+									if _, notfound := apiserver.QueryContainerByName(pod.Name); !notfound {
+										container := &apiserver.Container{
+											Name:      pod.ObjectMeta.Name,
+											Image:     pod.Spec.Containers[0].Image,
+											Internal:  fmt.Sprintf("%v:%v", pod.Status.PodIP, pod.Spec.Containers[0].Ports[0].HostPort),
+											Status:    resource.AppFailed,
+											ServiceId: svc.ID,
+										}
+										apiserver.UpdateContainer(container)
 									}
-									apiserver.UpdateContainer(container)
-									apiserver.UpdateApp(app)
+								}*/
+							}
+
+							if event.Type == watch.Deleted {
+								log.Debugf("Deleted==================%v", pod.ObjectMeta.Name)
+								if c, notfound := apiserver.QueryContainerByName(pod.Name); !notfound {
+									log.Debug("delete")
+									apiserver.DeleteContainer(c)
 								}
 							}
 
@@ -158,8 +177,8 @@ func Watch() {
 
 						}
 					}
-
 				}
+
 			}
 		}
 	}

@@ -152,7 +152,7 @@ func DeleteResource(param interface{}) error {
 		}
 		log.Noticef("namespace [%v] was deleted", ns.Name)
 		return nil
-	case v1.Service:
+	case v1.Service, *v1.Service:
 		svc := param.(v1.Service)
 		err := client.K8sClient.
 			CoreV1().

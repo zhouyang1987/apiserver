@@ -52,9 +52,10 @@ func RedeployContainer(request *http.Request) (string, interface{}) {
 	}
 	svc = apiserver.QueryServiceById(container.ServiceId)
 	svc.Status = resource.AppRunning
-	if err := ChangeContainerStatus(svc, namespace); err != nil {
-		return r.StatusInternalServerError, err
-	}
+	apiserver.UpdateService(svc)
+	// if err := ChangeContainerStatus(svc, namespace); err != nil {
+	// 	return r.StatusInternalServerError, err
+	// }
 	return r.StatusCreated, "ok"
 }
 
