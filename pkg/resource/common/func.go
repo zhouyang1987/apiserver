@@ -1,9 +1,12 @@
 package common
 
 import (
-	// "apiserver/pkg/api/apiserver"
+	"strings"
+
+	"apiserver/pkg/api/apiserver"
 	"apiserver/pkg/client"
 	"apiserver/pkg/resource"
+	"apiserver/pkg/resource/event"
 	"apiserver/pkg/util/log"
 	"apiserver/pkg/util/parseUtil"
 
@@ -218,46 +221,6 @@ func DeleteResource(param interface{}) error {
 	return nil
 }
 
-// func WatchPodStatus() {
-// 	watcher, err := client.K8sClient.CoreV1().Pods("").Watch(metav1.ListOptions{})
-// 	if err != nil {
-// 		log.Errorf("watch the pod of replicationController named %s err:%v", svc.Name, err)
-// 	} else {
-// 		eventChan := watcher.ResultChan()
-// 		for {
-// 			select {
-// 			case event := <-eventChan:
-// 				if event.Object != nil {
-// 					if event.Object.(*v1.Pod).Status.Phase == v1.PodRunning {
-// 						svc.Status = resource.AppRunning
-// 					}
-// 					if event.Object.(*v1.Pod).Status.Phase == v1.PodSucceeded {
-// 						svc.Status = resource.AppSuccessed
-// 					}
-// 					if event.Object.(*v1.Pod).Status.Phase == v1.PodPending {
-// 						svc.Status = resource.AppBuilding
-// 					}
-// 					if event.Object.(*v1.Pod).Status.Phase == v1.PodFailed {
-// 						svc.Status = resource.AppFailed
-// 					}
-// 					if event.Object.(*v1.Pod).Status.Phase == v1.PodUnknown {
-// 						svc.Status = resource.AppUnknow
-// 					}
-// 					if err := svc.Update(); err != nil {
-// 						log.Errorf("update application's status to %s err:%v", resource.Status[svc.Status], err)
-
-// 						continue
-// 					} else {
-// 						if svc.Status == resource.AppRunning {
-// 							break
-// 						}
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-
 func UpdateResouce(param interface{}) error {
 	switch param.(type) {
 	case *v1.Namespace:
@@ -351,16 +314,63 @@ func GetDeploymentPods(appName, namespace string) ([]v1.Pod, error) {
 	return list.Items, nil
 }
 
-func GetEventsForPod(namespace, podName string) (list []v1.Event, err error) {
+func GetEventsForContainer(namespace, containerName string) (list []event.Event, err error) {
 	listEvent, err := client.K8sClient.CoreV1().Events(namespace).List(resource.ListEverything)
 	if err != nil {
-		log.Errorf("get pod [%v]'s event err:%v", podName, err)
+		log.Errorf("get pod [%v]'s event err:%v", containerName, err)
 		return
 	}
-	for _, event := range listEvent.Items {
-		if event.InvolvedObject.Name == podName {
-			list = append(list, event)
+	for _, ev := range listEvent.Items {
+		if strings.Contains(ev.Name, containerName) {
+			list = append(
+				list,
+				event.Event{
+					Reason:        ev.Reason,
+					Type:          ev.Type,
+					LastTimestamp: ev.LastTimestamp,
+					Message:       ev.Message,
+				},
+			)
 		}
+	}
+	return
+}
+
+func GetEventsForService(namespace, serviceName string) (list []event.Event, err error) {
+	listEvent, err := client.K8sClient.CoreV1().Events(namespace).List(resource.ListEverything)
+	if err != nil {
+		log.Errorf("get service [%v]'s event err:%v", serviceName, err)
+		return
+	}
+
+	svcs, _ := apiserver.QueryServices(serviceName, 100000, 0, 0)
+	if len(svcs[0].Items) > 0 {
+		for _, ev := range listEvent.Items {
+			if strings.Contains(ev.Name, svcs[0].Items[0].Name) {
+				list = append(
+					list,
+					event.Event{
+						Reason:        ev.Reason,
+						Type:          ev.Type,
+						LastTimestamp: ev.LastTimestamp,
+						Message:       ev.Message,
+					},
+				)
+			}
+
+			if strings.Contains(ev.Name, serviceName) {
+				list = append(
+					list,
+					event.Event{
+						Reason:        ev.Reason,
+						Type:          ev.Type,
+						LastTimestamp: ev.LastTimestamp,
+						Message:       ev.Message,
+					},
+				)
+			}
+		}
+
 	}
 	return
 }

@@ -184,3 +184,7 @@ func GetAppOnly(id uint) *App {
 	db.First(app, id)
 	return app
 }
+
+func ExistApp(app *App) bool {
+	return !db.First(app).RecordNotFound()
+}

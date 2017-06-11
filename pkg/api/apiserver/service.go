@@ -150,3 +150,7 @@ func QueryServiceById(id uint) *Service {
 
 	return svc
 }
+
+func ExistService(svc *Service) bool {
+	return !db.First(svc).RecordNotFound()
+}

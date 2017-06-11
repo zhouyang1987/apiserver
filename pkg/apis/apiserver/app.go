@@ -71,23 +71,9 @@ func CreateApp(request *http.Request) (string, interface{}) {
 	external := fmt.Sprintf("http://%s:%v", configz.GetString("apiserver", "clusterNodes", "127.0.0.1"), svc.Spec.Ports[0].NodePort)
 	app.External = external
 	app.Items[0].External = external
+	app.AppStatus = resource.AppBuilding
 
-	time.Sleep(5 * time.Second)
-	podList, err := k8sclient.GetDeploymentPods(svc.Name, app.UserName)
-	if err != nil {
-		return r.StatusInternalServerError, err
-	}
-
-	var cs []*apiserver.Container
-	for _, pod := range podList {
-		c := &apiserver.Container{Name: pod.ObjectMeta.Name, Image: app.Items[0].Image, Internal: pod.Status.PodIP}
-		if pod.Status.Phase == "running" {
-			c.Status = resource.AppRunning
-		}
-
-		cs = append(cs, c)
-	}
-	app.Items[0].Items = cs
+	app.Items[0].Status = resource.AppBuilding
 	apiserver.InsertApp(app)
 	return r.StatusCreated, "ok"
 }
@@ -96,7 +82,7 @@ func DeleteApp(request *http.Request) (string, interface{}) {
 	id, _ := strconv.ParseUint(mux.Vars(request)["id"], 10, 64)
 	namespace := mux.Vars(request)["namespace"]
 	app := apiserver.QueryAppById(uint(id))
-
+	apiserver.DeleteApp(app)
 	for _, service := range app.Items {
 		appName := service.Name
 
@@ -122,8 +108,6 @@ func DeleteApp(request *http.Request) (string, interface{}) {
 			return r.StatusInternalServerError, "delete application err: " + err.Error()
 		}
 	}
-
-	apiserver.DeleteApp(app)
 	return r.StatusNoContent, "ok"
 }
 

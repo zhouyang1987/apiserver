@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -8,7 +9,9 @@ import (
 	"apiserver/pkg/resource"
 	"apiserver/pkg/util/log"
 
+	"apiserver/pkg/api/apiserver"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/pkg/api/v1"
 	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
@@ -71,6 +74,93 @@ func List() {
 		select {
 		case <-ticker.C:
 			go listResource()
+		}
+	}
+}
+
+func Watch() {
+	watcher, err := client.K8sClient.CoreV1().Pods("").Watch(metav1.ListOptions{})
+	if err != nil {
+		log.Errorf("watch the pod of deployment err:%v", err)
+	} else {
+		eventChan := watcher.ResultChan()
+		for {
+			select {
+			case event := <-eventChan:
+				if event.Object != nil {
+					pod := event.Object.(*v1.Pod)
+
+					var container *apiserver.Container
+
+					apps, _ := apiserver.QueryApps(pod.Namespace, "", 1000000, 0)
+
+					for _, app := range apps {
+						svcs, _ := apiserver.QueryServices(pod.Labels["name"], 1000000, 0, app.ID)
+						for _, svc := range svcs {
+							if len(event.Object.(*v1.Pod).Status.ContainerStatuses) > 0 && event.Type == watch.Modified {
+								if event.Object.(*v1.Pod).Status.ContainerStatuses[0].State.Running != nil {
+									log.Debug("Running==================")
+									app.AppStatus = resource.AppRunning
+									svc.Status = resource.AppRunning
+									container = &apiserver.Container{
+										Name:      pod.ObjectMeta.Name,
+										Image:     pod.Spec.Containers[0].Image,
+										Internal:  fmt.Sprintf("%v:%v", pod.Status.PodIP, pod.Spec.Containers[0].Ports[0].HostPort),
+										Status:    resource.AppRunning,
+										ServiceId: svc.ID,
+									}
+									apiserver.UpdateContainer(container)
+									apiserver.UpdateApp(app)
+
+								}
+
+								if event.Object.(*v1.Pod).Status.ContainerStatuses[0].State.Waiting != nil {
+									log.Debug("Waiting==================")
+									container = &apiserver.Container{
+										Name:      pod.ObjectMeta.Name,
+										Image:     pod.Spec.Containers[0].Image,
+										Internal:  fmt.Sprintf("%v:%v", pod.Status.PodIP, pod.Spec.Containers[0].Ports[0].HostPort),
+										Status:    resource.AppBuilding,
+										ServiceId: svc.ID,
+									}
+									apiserver.InsertContainer(container)
+									apiserver.UpdateApp(app)
+								}
+
+								if event.Object.(*v1.Pod).Status.ContainerStatuses[0].State.Terminated != nil {
+									log.Debug("Terminated==================")
+									app.AppStatus = resource.AppFailed
+									svc.Status = resource.AppFailed
+									container = &apiserver.Container{
+										Name:      pod.ObjectMeta.Name,
+										Image:     pod.Spec.Containers[0].Image,
+										Internal:  fmt.Sprintf("%v:%v", pod.Status.PodIP, pod.Spec.Containers[0].Ports[0].HostPort),
+										Status:    resource.AppFailed,
+										ServiceId: svc.ID,
+									}
+									apiserver.UpdateContainer(container)
+									apiserver.UpdateApp(app)
+								}
+							}
+
+							if pod.Status.Phase == v1.PodFailed {
+								log.Debug("FAILD==================")
+								app.AppStatus = resource.AppFailed
+								svc.Status = resource.AppFailed
+								apiserver.UpdateApp(app)
+							}
+							if pod.Status.Phase == v1.PodUnknown {
+								log.Debug("UNKNOWN=================")
+								app.AppStatus = resource.AppUnknow
+								svc.Status = resource.AppUnknow
+								apiserver.UpdateApp(app)
+							}
+
+						}
+					}
+
+				}
+			}
 		}
 	}
 }

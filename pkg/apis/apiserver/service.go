@@ -323,3 +323,13 @@ func ChangeServiceStatus(svc *apiserver.Service, namespace string) error {
 	apiserver.UpdateService(svc)
 	return nil
 }
+
+func GetServiceEvents(request *http.Request) (string, interface{}) {
+	namespace := mux.Vars(request)["namespace"]
+	containerName := mux.Vars(request)["name"]
+	list, err := k8sclient.GetEventsForContainer(namespace, containerName)
+	if err != nil {
+		return r.StatusInternalServerError, err
+	}
+	return r.StatusOK, map[string]interface{}{"events": list}
+}

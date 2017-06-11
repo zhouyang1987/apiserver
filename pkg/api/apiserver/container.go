@@ -57,12 +57,28 @@ func QueryContainerById(id uint) *Container {
 	return container
 }
 
+func QueryContainerByName(name string) *Container {
+	container := &Container{}
+	db.First(container, "name=?", name)
+	return container
+}
+
 func UpdateContainer(container *Container) {
 	db.Model(new(Container)).Update(container)
 }
 
 func DeleteContainer(container *Container) {
-	db.Delete(container, "service_id=?", container.ServiceId)
+	db.Delete(container)
+}
+
+func ExistContainer(container *Container) bool {
+	return !db.First(container).RecordNotFound()
+}
+
+func InsertContainer(container *Container) {
+	if db.Model(container).Where("name=?", container.Name).First(container).RecordNotFound() {
+		db.Model(container).Save(container)
+	}
 }
 
 /*

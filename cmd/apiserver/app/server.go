@@ -49,6 +49,7 @@ func Run(server *Apiserver) error {
 	http.Handle("/", root)
 	log.Infof("starting apiserver and listen on : %v", fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort))
 	go cache.List()
+	go cache.Watch()
 	return http.ListenAndServe(fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort), nil)
 }
 

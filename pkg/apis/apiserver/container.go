@@ -7,6 +7,7 @@ import (
 
 	"apiserver/pkg/api/apiserver"
 	"apiserver/pkg/resource"
+
 	k8sclient "apiserver/pkg/resource/common"
 	r "apiserver/pkg/router"
 	"apiserver/pkg/storage/cache"
@@ -79,4 +80,14 @@ func ChangeContainerStatus(svc *apiserver.Service, namespace string) error {
 	svc.Items = containers
 	apiserver.UpdateService(svc)
 	return nil
+}
+
+func GetContainerEvents(request *http.Request) (string, interface{}) {
+	namespace := mux.Vars(request)["namespace"]
+	containerName := mux.Vars(request)["name"]
+	list, err := k8sclient.GetEventsForContainer(namespace, containerName)
+	if err != nil {
+		return r.StatusInternalServerError, err
+	}
+	return r.StatusOK, map[string]interface{}{"events": list}
 }

@@ -22,6 +22,7 @@ func InstallApi(router *mux.Router) {
 	//install service's api handle
 	r.RegisterHttpHandler(router, "/{namespace}/services", "GET", GetServices)
 	r.RegisterHttpHandler(router, "/{namespace}/services/{id}", "GET", GetService)
+	r.RegisterHttpHandler(router, "/{namespace}/services/{name}/events", "GET", GetServiceEvents)
 	r.RegisterHttpHandler(router, "/{namespace}/services", "POST", CreateService)
 	r.RegisterHttpHandler(router, "/{namespace}/services/{id}", "DELETE", DeleteService)
 	r.RegisterHttpHandler(router, "/{namespace}/services/{id}/{verb}", "PUT", UpdateServiceConfig)
@@ -32,9 +33,11 @@ func InstallApi(router *mux.Router) {
 
 	//install container's api handle
 	r.RegisterHttpHandler(router, "/{namespace}/containers", "GET", GetContainers)
+	r.RegisterHttpHandler(router, "/{namespace}/containers/{name}/events", "GET", GetContainerEvents)
 	r.RegisterHttpHandler(router, "/{namespace}/containers/{id}", "PATCH", RedeployContainer)
 	r.RegisterHttpHandler(router, "/{namespace}/containers", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/containers/", "OPTIONS", Option)
+	r.RegisterHttpHandler(router, "/{namespace}/containers/{name}/events", "OPTIONS", Option)
 
 	//install metrics's api handle
 	r.RegisterHttpHandler(router, "/{namespace}/metrics/{name}/{metric}/{type}", "OPTIONS", Option)

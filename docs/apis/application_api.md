@@ -32,8 +32,9 @@
   - [查询容器](#12.1)
   - [重新部署容器](#12.2)
 * **[日志接口](#13)**
-  - [获取应用pod的事件](#13.1)
+  - [获取服务的事件](#13.1)
   - [获取应用pod的cpu/memory实用情况](#13.2)
+  - [获取容器的事件](#13.3)
 * **[镜像接口](#14)**
   - [获取镜像列表](#14.1)
 * **[构建接口](#15)**
@@ -874,6 +875,73 @@ Method: PATCH
 ## <span id="13">日志接口</span>
 ---
 
+#### <span id="13.1">获取服务的事件</span>
+
+
+URI: ApiURI/api/v1/{namespace}/services/{name}/events
+
+Method: GET
+
+**参数说明**
+
+- namespace: 镜像所属租户   必须字段
+- name: 服务名称 必须字段
+
+**请求**
+
+- ApiURI//api/v1/huangjia/services/nginx-test/events
+
+
+**响应**
+
+```
+{
+    "apiversion": "v1",
+    "status": "200",
+    "data": {
+        "events": [
+            {
+                "reason": "Scheduled",
+                "message": "Successfully assigned nginx-test-1891245937-t2j17 to slave3",
+                "lastTimestamp": "2017-06-11T11:15:45Z",
+                "type": "Normal"
+            },
+            {
+                "reason": "Pulled",
+                "message": "Container image \"nginx\" already present on machine",
+                "lastTimestamp": "2017-06-11T11:15:46Z",
+                "type": "Normal"
+            },
+            {
+                "reason": "Created",
+                "message": "Created container with id 1ca3818f1e607b7c2ac1a429ef264c3143cec84a2e257e4d0792027dca920751",
+                "lastTimestamp": "2017-06-11T11:15:46Z",
+                "type": "Normal"
+            },
+            {
+                "reason": "Started",
+                "message": "Started container with id 1ca3818f1e607b7c2ac1a429ef264c3143cec84a2e257e4d0792027dca920751",
+                "lastTimestamp": "2017-06-11T11:15:47Z",
+                "type": "Normal"
+            },
+            {
+                "reason": "SuccessfulCreate",
+                "message": "Created pod: nginx-test-1891245937-t2j17",
+                "lastTimestamp": "2017-06-11T11:15:45Z",
+                "type": "Normal"
+            },
+            {
+                "reason": "ScalingReplicaSet",
+                "message": "Scaled up replica set nginx-test-1891245937 to 1",
+                "lastTimestamp": "2017-06-11T11:15:45Z",
+                "type": "Normal"
+            }
+        ]
+    }
+}
+```
+
+
 **metricName参考：**
 
 ```
@@ -908,7 +976,7 @@ Method: PATCH
 #### <span id="13.2">获取容器cpu实时使用情况</span>
 
 
-URI: ApiURI/api/v1//{namespace}/metrics/{name}/{metric}/{type}
+URI: ApiURI/api/v1/{namespace}/metrics/{name}/{metric}/{type}
 
 Method: GET
 
@@ -1030,6 +1098,60 @@ Method: GET
       ]
     }
   }
+}
+```
+
+#### <span id="13.3">获取容器的事件</span>
+
+
+URI: ApiURI/api/v1/{namespace}/containers/{name}/events
+
+Method: GET
+
+**参数说明**
+
+- namespace: 镜像所属租户   必须字段
+- name: 容器名称 必须字段
+
+**请求**
+
+- ApiURI//api/v1/huangjia/containers/nginx-test-1891245937-t2j17/events
+
+
+**响应**
+
+```
+{
+    "apiversion": "v1",
+    "status": "200",
+    "data": {
+        "events": [
+            {
+                "reason": "Scheduled",
+                "message": "Successfully assigned nginx-test-1891245937-t2j17 to slave3",
+                "lastTimestamp": "2017-06-11T11:15:45Z",
+                "type": "Normal"
+            },
+            {
+                "reason": "Pulled",
+                "message": "Container image \"nginx\" already present on machine",
+                "lastTimestamp": "2017-06-11T11:15:46Z",
+                "type": "Normal"
+            },
+            {
+                "reason": "Created",
+                "message": "Created container with id 1ca3818f1e607b7c2ac1a429ef264c3143cec84a2e257e4d0792027dca920751",
+                "lastTimestamp": "2017-06-11T11:15:46Z",
+                "type": "Normal"
+            },
+            {
+                "reason": "Started",
+                "message": "Started container with id 1ca3818f1e607b7c2ac1a429ef264c3143cec84a2e257e4d0792027dca920751",
+                "lastTimestamp": "2017-06-11T11:15:47Z",
+                "type": "Normal"
+            }
+        ]
+    }
 }
 ```
 
