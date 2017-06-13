@@ -78,6 +78,14 @@ type Volume struct {
 	BaseConfigId uint
 }
 
+type Config struct {
+	ID         uint         `json:"id"`
+	CreatedAt  time.Time    `json:"createAt"`
+	Namespace  string       `json:"namespace"`
+	Name       string       `json:"name,omitempty" `
+	ConfigMaps []*ConfigMap `json:"items,omitempty" `
+}
+
 type ConfigMap struct {
 	ID              uint      `json:"id"`
 	CreatedAt       time.Time `json:"createAt"`
@@ -85,6 +93,7 @@ type ConfigMap struct {
 	Content         string    `json:"content,omitempty"`
 	ContainerPath   string    `json:"containerPath,omitempty"`
 	ServiceConfigId uint
+	ConfigId        uint
 }
 
 type SuperConfig struct {

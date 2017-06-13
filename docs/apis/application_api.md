@@ -39,6 +39,12 @@
   - [获取镜像列表](#14.1)
 * **[构建接口](#15)**
   - [ 构建应用](#15.1)
+* **[服务配置接口](#16)**
+  - [添加服务配置](#16.1)
+  - [添加服务配置子文件](#16.2)
+  - [删除服务配置](#16.3)
+  - [删除服务配置子文件](#16.4)
+  - [查询服务配置](#16.5)
 
 # <span id="2">协议</span>
 
@@ -1177,7 +1183,7 @@ Method: GET
 
 **请求**
 
-- ApiURI/api/v1/{namespace}/services?pageCnt=10&pageNum=0&name=kube
+- ApiURI/api/v1/huangjia/services?pageCnt=10&pageNum=0&name=kube
 
 
 **响应**
@@ -1211,5 +1217,212 @@ Method: GET
     ],
     "total": 1
   }
+}
+```
+
+
+
+## <span id="16">服务配置接口</span>
+---
+
+
+#### <span id="16.1">添加服务配置</span>
+
+
+URI: ApiURI/api/v1/{namespace}/configs
+
+Method: POST
+
+**参数说明**
+
+- namespace: 镜像所属租户   必须字段
+
+
+
+**请求**
+
+- ApiURI/api/v1/huangjia/configs
+
+```
+{
+  "name":"test"
+}
+```
+
+**响应**
+
+```
+{
+    "apiversion": "v1",
+    "status": "201",
+    "data": "ok"
+}
+```
+
+
+#### <span id="16.2">添加服务配置子文件</span>
+
+
+URI: ApiURI/api/v1/{namespace}/configs/2/items
+
+Method: POST
+
+**参数说明**
+
+- namespace: 镜像所属租户   必须字段
+
+
+
+**请求**
+
+- ApiURI/api/v1/huangjia/configs
+
+```
+{
+  "name":"config",
+  "content":"{\"test\":\"huangjia\"}"
+}
+```
+
+**响应**
+
+```
+{
+    "apiversion": "v1",
+    "status": "201",
+    "data": "ok"
+}
+```
+
+
+#### <span id="16.3">删除服务配置</span>
+
+
+URI: ApiURI/api/v1/{namespace}/configs/2/items
+
+Method: DELETE
+
+**参数说明**
+
+- namespace: 镜像所属租户   必须字段
+
+
+
+**请求**
+
+- ApiURI/api/v1/huangjia/configs/2
+
+```
+{
+  "name":"config",
+  "content":"{\"test\":\"huangjia\"}"
+}
+```
+
+**响应**
+
+```
+{
+    "apiversion": "v1",
+    "status": "200",
+    "data": "ok"
+}
+```
+
+
+#### <span id="16.4">删除服务配置子文件</span>
+
+
+URI: ApiURI/api/v1/{namespace}/configs/2/items/1
+
+Method: DELETE
+
+**参数说明**
+
+- namespace: 镜像所属租户   必须字段
+
+
+
+**请求**
+
+- ApiURI/api/v1/huangjia/configs
+
+
+
+**响应**
+
+```
+{
+    "apiversion": "v1",
+    "status": "200",
+    "data": "ok"
+}
+```
+
+
+#### <span id="16.5">查询服务配置</span>
+
+
+URI: ApiURI/api/v1/{namespace}/configs?pageNum=0&pageCnt=10
+
+Method: GET
+
+**参数说明**
+
+- namespace: 应用所属租户   必须字段
+- pageCnt: 分页查询每页大小  必须字段
+- pageNum: 分页查询页码  必须字段
+- name: 应用名称  可选字段，当不传时，默认查询当前命名空间下的所有的应用，传入值时，以该值模糊查询结果
+
+
+
+**请求**
+
+- ApiURI/api/v1/huangjia/configs?pageNum=0&pageCnt=10
+
+
+**响应**
+
+```
+{
+    "apiversion": "v1",
+    "status": "200",
+    "data": {
+        "configs": [
+            {
+                "id": 2,
+                "createAt": "2017-06-14T01:39:50+08:00",
+                "namespace": "huangjia",
+                "name": "test",
+                "items": [
+                    {
+                        "id": 3,
+                        "createAt": "2017-06-14T01:40:27+08:00",
+                        "name": "config",
+                        "content": "{\"test\":\"huangjia\"}",
+                        "ServiceConfigId": 0,
+                        "ConfigId": 2
+                    }
+                ]
+            },
+            {
+                "id": 1,
+                "createAt": "2017-06-14T01:35:02+08:00",
+                "namespace": "huangjia",
+                "name": "nignx",
+                "items": [
+                    {
+                        "id": 2,
+                        "createAt": "2017-06-14T01:36:00+08:00",
+                        "name": "config",
+                        "content": "{\"test\":\"huangjia\"}",
+                        "ServiceConfigId": 0,
+                        "ConfigId": 1
+                    }
+                ]
+            }
+        ],
+        "total": 2
+    }
 }
 ```

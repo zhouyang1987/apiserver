@@ -44,6 +44,14 @@ func InstallApi(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/metrics/{name}/{metric}/{type}", "GET", GetMetrics)
 	// r.RegisterHttpHandler(router, "/{namespace}/pod/", "OPTIONS", Option)
 
+	//install configMap's api handle
+	r.RegisterHttpHandler(router, "/{namespace}/configs", "GET", GetConfigs)
+	r.RegisterHttpHandler(router, "/{namespace}/configs", "POST", CreateConfig)
+	r.RegisterHttpHandler(router, "/{namespace}/configs/{id}", "DELETE", DeleteConfig)
+	r.RegisterHttpHandler(router, "/{namespace}/configs/{id}/items", "POST", CreateConfigItem)
+	r.RegisterHttpHandler(router, "/{namespace}/configs/{id}/items/{itemId}", "DELETE", DeleteConfigItem)
+	r.RegisterHttpHandler(router, "/{namespace}/configs", "OPTIONS", Option)
+	r.RegisterHttpHandler(router, "/{namespace}/configs/{id}", "OPTIONS", Option)
 }
 
 func Option(request *http.Request) (string, interface{}) {

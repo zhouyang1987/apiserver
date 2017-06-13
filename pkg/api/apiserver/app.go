@@ -10,7 +10,7 @@ var (
 
 func init() {
 	db.SingularTable(true)
-	db.CreateTable(&App{}, &Service{}, new(Container), new(Port), new(Env), new(SuperConfig), new(ConfigMap), new(Volume), new(BaseConfig), new(ServiceConfig), new(ContainerConfig))
+	db.CreateTable(&App{}, &Service{}, new(Container), new(Port), new(Env), new(SuperConfig), new(ConfigMap), new(Volume), new(BaseConfig), new(ServiceConfig), new(ContainerConfig), new(Config))
 }
 
 func QueryApps(namespace, appName string, pageCnt, pageNum int) (list []*App, total int) {

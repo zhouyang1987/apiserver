@@ -28,3 +28,21 @@ func NewConfigMapByService(svc *apiserver.Service, namespace string) *v1.ConfigM
 		Data: map[string]string{svc.Config.ConfigMap.Name: svc.Config.ConfigMap.Content},
 	}
 }
+
+func NewConfigMapByConfig(c *apiserver.Config) v1.ConfigMap {
+	datas := map[string]string{}
+	for _, cfg := range c.ConfigMaps {
+		datas[cfg.Name] = cfg.Content
+	}
+
+	return v1.ConfigMap{
+		TypeMeta: resource.NewTypeMeta(resource.ResourceKindConfigMap, "v1"),
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        c.Name,
+			Namespace:   c.Namespace,
+			Labels:      map[string]string{"name": c.Name},
+			Annotations: map[string]string{"name": c.Name},
+		},
+		Data: datas,
+	}
+}
