@@ -89,6 +89,10 @@ func UpdateApp(app *App) {
 	db.Model(app).Update(app)
 }
 
+func UpdateAppOnly(app *App) {
+	db.Model(app).Set("gorm:save_associations", false).Update(app)
+}
+
 func DeleteApp(app *App) {
 	db.Delete(app)
 	for _, svc := range app.Items {
@@ -184,4 +188,10 @@ func GetAppOnly(id uint) *App {
 
 func ExistApp(app *App) bool {
 	return !db.First(app).RecordNotFound()
+}
+
+func QueryAppsByNamespace(namespace string) []*App {
+	apps := []*App{}
+	db.Find(&apps, "user_name=?", namespace)
+	return apps
 }

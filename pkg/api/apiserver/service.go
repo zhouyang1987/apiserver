@@ -154,3 +154,13 @@ func QueryServiceById(id uint) *Service {
 func ExistService(svc *Service) bool {
 	return !db.First(svc).RecordNotFound()
 }
+
+func QueryServicesByAppId(id uint) []*Service {
+	svcs := []*Service{}
+	db.Find(&svcs, "app_id=?", id)
+	return svcs
+}
+
+func UpdateServiceOnly(svc *Service) {
+	db.Model(svc).Set("gorm:save_associations", false).Update(svc)
+}
