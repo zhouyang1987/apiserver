@@ -18,6 +18,7 @@ func InstallApi(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/apps", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/apps/", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/apps/{id}/", "OPTIONS", Option)
+	r.RegisterHttpHandler(router, "/{namespace}/apps/{id}", "OPTIONS", Option)
 
 	//install service's api handle
 	r.RegisterHttpHandler(router, "/{namespace}/services", "GET", GetServices)
@@ -30,6 +31,7 @@ func InstallApi(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/services", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/services/{id}", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/services/{id}/", "OPTIONS", Option)
+	r.RegisterHttpHandler(router, "/{namespace}/services/{id}/{verb}", "OPTIONS", Option)
 
 	//install container's api handle
 	r.RegisterHttpHandler(router, "/{namespace}/containers", "GET", GetContainers)
@@ -52,6 +54,8 @@ func InstallApi(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/configs/{id}/items/{itemId}", "DELETE", DeleteConfigItem)
 	r.RegisterHttpHandler(router, "/{namespace}/configs", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/configs/{id}", "OPTIONS", Option)
+	r.RegisterHttpHandler(router, "/{namespace}/configs/{id}/items", "OPTIONS", Option)
+	r.RegisterHttpHandler(router, "/{namespace}/configs/{id}/items/{itemId}", "OPTIONS", Option)
 }
 
 func Option(request *http.Request) (string, interface{}) {

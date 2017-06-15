@@ -142,3 +142,18 @@ type RollOption struct {
 	Image  string     `json:"image"`
 	Conifg *ConfigMap `json:"config"`
 }
+
+type Deploy struct {
+	ID              uint    `json:"requirementId,omitempty"`
+	requirementName string  `json:"requirementName,omitempty"`
+	Type            string  `json:"type,omitempty"`
+	Items           []*Item `json:"features,omitempty"`
+}
+
+type Item struct {
+	ID            uint   `json:"id,omitempty"`
+	ProjectId     uint   `projectId:"id,omitempty"`
+	ProjectName   string `json:"projectName,omitempty"`
+	DockerRepoUrl string `json:"dockerRepoUrl,omitempty"`
+	Tag           string `json:"tag,omitempty"`
+}

@@ -72,7 +72,7 @@ func DeleteContainer(container *Container) {
 }
 
 func ExistContainer(container *Container) bool {
-	return db.First(container).RecordNotFound()
+	return db.First(container, "name=?", container.Name).RecordNotFound()
 }
 
 func InsertContainer(container *Container) {
