@@ -165,6 +165,7 @@ func UpdateAppConfig(request *http.Request) (string, interface{}) {
 func StopOrStartOrRedeployApp(request *http.Request) (string, interface{}) {
 	id, _ := strconv.ParseUint(mux.Vars(request)["id"], 10, 64)
 	app := apiserver.QueryAppById(uint(id))
+
 	for _, svc := range app.Items {
 		appName := svc.Name
 		namespace := mux.Vars(request)["namespace"]
@@ -184,6 +185,7 @@ func StopOrStartOrRedeployApp(request *http.Request) (string, interface{}) {
 			svc.Status = resource.AppStop
 			apiserver.UpdateApp(app)
 			for _, container := range svc.Items {
+				delete(cache.Store.PodCache.List[namespace], container.Name)
 				apiserver.DeleteContainer(container)
 			}
 		}
@@ -210,6 +212,7 @@ func StopOrStartOrRedeployApp(request *http.Request) (string, interface{}) {
 			}
 
 			for _, container := range svc.Items {
+				// delete(cache.Store.PodCache.List[namespace], container.Name)
 				apiserver.DeleteContainer(container)
 			}
 			app.AppStatus = resource.AppRunning

@@ -15,6 +15,7 @@ func InstallApi(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/apps", "POST", CreateApp)
 	r.RegisterHttpHandler(router, "/{namespace}/apps/{id}", "DELETE", DeleteApp)
 	r.RegisterHttpHandler(router, "/{namespace}/apps/{id}/{verb}", "PATCH", StopOrStartOrRedeployApp)
+	r.RegisterHttpHandler(router, "/{namespace}/apps/{id}/{verb}", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/apps", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/apps/", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/apps/{id}/", "OPTIONS", Option)
