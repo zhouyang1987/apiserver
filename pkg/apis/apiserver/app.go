@@ -198,8 +198,8 @@ func StopOrStartOrRedeployApp(request *http.Request) (string, interface{}) {
 
 			app.AppStatus = resource.AppRunning
 			svc.Status = resource.AppRunning
-			apiserver.UpdateApp(app)
-			apiserver.UpdateService(svc)
+			apiserver.UpdateAppOnly(app)
+			apiserver.UpdateServiceOnly(svc)
 
 		}
 		if verb == "redeploy" {
@@ -207,18 +207,19 @@ func StopOrStartOrRedeployApp(request *http.Request) (string, interface{}) {
 			if err != nil {
 				return r.StatusInternalServerError, err
 			}
+
 			for _, pod := range pods {
 				k8sclient.DeleteResource(pod)
 			}
+			app.AppStatus = resource.AppBuilding
+			svc.Status = resource.AppBuilding
+			apiserver.UpdateAppOnly(app)
+			apiserver.UpdateServiceOnly(svc)
 
 			for _, container := range svc.Items {
-				// delete(cache.Store.PodCache.List[namespace], container.Name)
+				delete(cache.Store.PodCache.List[namespace], container.Name)
 				apiserver.DeleteContainer(container)
 			}
-			app.AppStatus = resource.AppRunning
-			svc.Status = resource.AppRunning
-			apiserver.UpdateApp(app)
-			apiserver.UpdateService(svc)
 
 		}
 	}

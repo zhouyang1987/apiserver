@@ -10,6 +10,8 @@ import (
 	"apiserver/pkg/resource"
 	"apiserver/pkg/util/log"
 
+	// "apiserver/pkg/util/jsonx"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -80,7 +82,7 @@ func init() {
 
 //Sync ervery 30 Second to list k8s's resource to memory
 func List() {
-	ticker := time.NewTicker(time.Second * 5)
+	ticker := time.NewTicker(time.Second * 10)
 	for {
 		select {
 		case <-ticker.C:
@@ -90,7 +92,7 @@ func List() {
 }
 
 func Watch() {
-	ticker := time.NewTicker(time.Second * 10)
+	ticker := time.NewTicker(time.Second * 15)
 	for {
 		select {
 		case <-ticker.C:
@@ -131,10 +133,8 @@ func updateAppStatus() {
 						}
 
 						if apiserver.ExistContainer(&apiserver.Container{Name: pod.ObjectMeta.Name}) {
-							log.Debug("not exist==========================" + pod.ObjectMeta.Name)
 							apiserver.InsertContainer(container)
 						} else {
-							log.Debug("exist==========================" + pod.ObjectMeta.Name)
 							c, _ := apiserver.QueryContainerByName(pod.ObjectMeta.Name)
 							container.ID = c.ID
 							apiserver.UpdateContainer(container)

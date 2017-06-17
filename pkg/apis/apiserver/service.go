@@ -235,6 +235,7 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 		svc.Status = resource.AppStop
 		apiserver.UpdateService(svc)
 		for _, container := range svc.Items {
+			delete(cache.Store.PodCache.List[namespace], container.Name)
 			apiserver.DeleteContainer(container)
 		}
 	}
@@ -247,10 +248,6 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 
 		svc.Status = resource.AppRunning
 		apiserver.UpdateService(svc)
-		// if err := ChangeServiceStatus(svc, namespace); err != nil {
-		// 	return r.StatusInternalServerError, err
-		// }
-
 	}
 	if verb == "redeploy" {
 		pods, err := k8sclient.GetPods(namespace, svc.Name)
@@ -261,11 +258,13 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 			k8sclient.DeleteResource(pod)
 		}
 
-		svc.Status = resource.AppRunning
-		apiserver.UpdateService(svc)
-		// if err := ChangeServiceStatus(svc, namespace); err != nil {
-		// 	return r.StatusInternalServerError, err
-		// }
+		svc.Status = resource.AppBuilding
+		apiserver.UpdateServiceOnly(svc)
+
+		for _, container := range svc.Items {
+			delete(cache.Store.PodCache.List[namespace], container.Name)
+			apiserver.DeleteContainer(container)
+		}
 	}
 	return r.StatusCreated, "ok"
 }
