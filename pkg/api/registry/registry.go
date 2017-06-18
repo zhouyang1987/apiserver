@@ -12,6 +12,7 @@ var (
 type Image struct {
 	Name   string      `json:"name"`
 	TagLen int         `json:"tagLen"`
+	Tags   []string    `json:"tags"`
 	Fest   []*Manifest `json:"manifest"`
 }
 

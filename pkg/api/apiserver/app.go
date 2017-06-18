@@ -10,7 +10,7 @@ var (
 
 func init() {
 	db.SingularTable(true)
-	db.CreateTable(&App{}, &Service{}, new(Container), new(Port), new(Env), new(SuperConfig), new(ConfigMap), new(Volume), new(BaseConfig), new(ServiceConfig), new(ContainerConfig), new(Config))
+	db.CreateTable(&App{}, &Service{}, new(Container), new(Port), new(Env), new(SuperConfig), new(ConfigMap), new(Volume), new(BaseConfig), new(ServiceConfig), new(ContainerConfig), new(ConfigGroup))
 }
 
 func QueryApps(namespace, appName string, pageCnt, pageNum int) (list []*App, total int) {
@@ -32,7 +32,8 @@ func QueryApps(namespace, appName string, pageCnt, pageNum int) (list []*App, to
 			config := &ServiceConfig{}
 			var (
 				base        = &BaseConfig{}
-				configmap   = &ConfigMap{}
+				configGroup = &ConfigGroup{}
+				configmaps  = []*ConfigMap{}
 				superConfig = &SuperConfig{}
 				volumes     []*Volume
 				envs        []*Env
@@ -48,8 +49,11 @@ func QueryApps(namespace, appName string, pageCnt, pageNum int) (list []*App, to
 			base.Volumes = volumes
 			config.BaseConfig = base
 
-			db.First(configmap, ConfigMap{ServiceConfigId: config.ID})
-			config.ConfigMap = configmap
+			db.First(configGroup, ConfigGroup{ServiceConfigId: config.ID})
+			config.ConfigGroup = configGroup
+
+			db.Find(&configmaps, ConfigMap{ConfigGroupId: configGroup.ID})
+			configGroup.ConfigMaps = configmaps
 
 			db.First(superConfig, SuperConfig{ServiceConfigId: config.ID})
 			db.Find(&envs, Env{SuperConfigId: superConfig.ID})
@@ -71,14 +75,23 @@ func InsertApp(app *App) {
 	if len(app.Items[0].Items) != 0 {
 		app.Items[0].Items[0].Config = &ContainerConfig{
 			BaseConfig:  svcConfig.BaseConfig,
-			ConfigMap:   svcConfig.ConfigMap,
 			SuperConfig: svcConfig.SuperConfig,
 		}
 	}
 
+	if svcConfig.ConfigGroup != nil {
+		for _, c := range svcConfig.ConfigGroup.ConfigMaps {
+			UpdateConfigMap(c)
+		}
+	}
+	configGroupId := svcConfig.ConfigGroup.ID
+	svcConfig.ConfigGroup = nil
 	if db.Model(app).Where("name=?", app.Name).First(app).RecordNotFound() {
+		app.Items[0].AppName = app.Name
 		db.Model(app).Save(app)
 	}
+
+	db.Model(new(ConfigGroup)).Set("gorm:save_associations", false).Update(&ConfigGroup{ServiceConfigId: app.Items[0].Config.ID, ServiceName: app.Items[0].Name, ID: configGroupId})
 }
 
 func UpdateApp(app *App) {
@@ -108,9 +121,6 @@ func DeleteApp(app *App) {
 			db.Delete(volume, "base_config_id=?", svcCfgBase.ID)
 		}
 
-		svcCfgMap := svcCfg.ConfigMap
-		db.Delete(svcCfgMap, "service_config_id=?", svcCfg.ID)
-
 		svcSuper := svcCfg.SuperConfig
 		db.Delete(svcSuper, "service_config_id=?", svcCfg.ID)
 
@@ -125,6 +135,15 @@ func DeleteApp(app *App) {
 			db.Delete(c)
 			db.Delete(c.Config, "container_id=?", c.ID)
 		}
+
+		if svc.Config.ConfigGroup != nil {
+			for _, c := range svc.Config.ConfigGroup.ConfigMaps {
+				c.ContainerPath = ""
+			}
+			db.Model(new(ConfigGroup)).Update(svc.Config.ConfigGroup)
+			db.Exec("update config_group set service_config_id = ?,service_name=?", 0, "")
+		}
+
 	}
 }
 
@@ -142,7 +161,8 @@ func QueryAppById(id uint) *App {
 		config := &ServiceConfig{}
 		var (
 			base        = &BaseConfig{}
-			configmap   = &ConfigMap{}
+			configGroup = &ConfigGroup{}
+			configmaps  = []*ConfigMap{}
 			superConfig = &SuperConfig{}
 			volumes     []*Volume
 			envs        []*Env
@@ -163,8 +183,11 @@ func QueryAppById(id uint) *App {
 		base.Volumes = volumes
 		config.BaseConfig = base
 
-		db.First(configmap, ConfigMap{ServiceConfigId: config.ID})
-		config.ConfigMap = configmap
+		db.First(configGroup, ConfigGroup{ServiceConfigId: config.ID})
+		config.ConfigGroup = configGroup
+
+		db.Find(&configmaps, ConfigMap{ConfigGroupId: configGroup.ID})
+		configGroup.ConfigMaps = configmaps
 
 		db.First(superConfig, SuperConfig{ServiceConfigId: config.ID})
 		db.Find(&envs, Env{SuperConfigId: superConfig.ID})

@@ -59,7 +59,7 @@ func CreateService(request *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, err
 	}
 
-	if app.Items[0].Config.ConfigMap != nil {
+	if app.Items[0].Config.ConfigGroup != nil {
 		cfgMap := configMap.NewConfigMap(app)
 		if err := k8sclient.CreateResource(cfgMap); err != nil {
 			return r.StatusInternalServerError, err
@@ -78,7 +78,6 @@ func CreateService(request *http.Request) (string, interface{}) {
 	app.External = external
 	app.Items[0].External = external
 
-	time.Sleep(5 * time.Second)
 	podList, err := k8sclient.GetDeploymentPods(svc.Name, app.UserName)
 	if err != nil {
 		return r.StatusInternalServerError, err
@@ -94,6 +93,7 @@ func CreateService(request *http.Request) (string, interface{}) {
 		cs = append(cs, c)
 	}
 	app.Items[0].Items = cs
+	app.Items[0].AppName = app.Name
 	apiserver.InsertService(app.Items[0])
 	return r.StatusCreated, "ok"
 }
@@ -104,18 +104,10 @@ func DeleteService(request *http.Request) (string, interface{}) {
 	app := apiserver.GetAppOnly(svc.ID)
 	appName := svc.Name
 	namespace := app.UserName
-
 	if !cache.ExsitResource(namespace, appName, resource.ResourceKindDeployment) {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
 	if err := k8sclient.DeleteResource(cache.Store.DeploymentCache.List[namespace][appName]); err != nil {
-		return r.StatusInternalServerError, "delete application err: " + err.Error()
-	}
-
-	if !cache.ExsitResource(namespace, appName, resource.ResourceKindConfigMap) {
-		return r.StatusNotFound, "configMap named " + appName + ` does't exist`
-	}
-	if err := k8sclient.DeleteResource(cache.Store.ConfigMapCache.List[namespace][appName]); err != nil {
 		return r.StatusInternalServerError, "delete application err: " + err.Error()
 	}
 
@@ -124,6 +116,12 @@ func DeleteService(request *http.Request) (string, interface{}) {
 	}
 	if err := k8sclient.DeleteResource(cache.Store.ServiceCache.List[namespace][appName]); err != nil {
 		return r.StatusInternalServerError, "delete application err: " + err.Error()
+	}
+
+	delete(cache.Store.ServiceCache.List[namespace], svc.Name)
+	delete(cache.Store.DeploymentCache.List[namespace], svc.Name)
+	for _, c := range svc.Items {
+		delete(cache.Store.PodCache.List[namespace], c.Name)
 	}
 
 	apiserver.DeleteService(svc)
@@ -199,7 +197,7 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 
 		svc.Image = rollOption.Image
 		svc.Items[0].Image = rollOption.Image
-		svc.Config.ConfigMap = rollOption.Conifg
+		svc.Config.ConfigGroup = rollOption.Conifg
 
 		cfgMap := configMap.NewConfigMapByService(svc, namespace)
 		if err := k8sclient.UpdateResouce(cfgMap); err != nil {
@@ -233,7 +231,7 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 		}
 
 		svc.Status = resource.AppStop
-		apiserver.UpdateService(svc)
+		apiserver.UpdateServiceOnly(svc)
 		for _, container := range svc.Items {
 			delete(cache.Store.PodCache.List[namespace], container.Name)
 			apiserver.DeleteContainer(container)
@@ -247,7 +245,7 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 		}
 
 		svc.Status = resource.AppRunning
-		apiserver.UpdateService(svc)
+		apiserver.UpdateServiceOnly(svc)
 	}
 	if verb == "redeploy" {
 		pods, err := k8sclient.GetPods(namespace, svc.Name)

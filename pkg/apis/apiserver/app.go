@@ -11,7 +11,6 @@ import (
 	"apiserver/pkg/configz"
 	"apiserver/pkg/resource"
 	k8sclient "apiserver/pkg/resource/common"
-	"apiserver/pkg/resource/configMap"
 	"apiserver/pkg/resource/deployment"
 	"apiserver/pkg/resource/service"
 	r "apiserver/pkg/router"
@@ -19,10 +18,6 @@ import (
 	"apiserver/pkg/util/parseUtil"
 
 	"github.com/gorilla/mux"
-	res "k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/pkg/api/v1"
-	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
 func GetApps(request *http.Request) (string, interface{}) {
@@ -56,13 +51,6 @@ func CreateApp(request *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, err
 	}
 
-	if app.Items[0].Config.ConfigMap != nil {
-		cfgMap := configMap.NewConfigMap(app)
-		if err := k8sclient.CreateResource(cfgMap); err != nil {
-			return r.StatusInternalServerError, err
-		}
-	}
-
 	k8sDeploy := deployment.NewDeployment(app)
 	if err = k8sclient.CreateResource(k8sDeploy); err != nil {
 		k8sclient.DeleteResource(svc)
@@ -73,8 +61,8 @@ func CreateApp(request *http.Request) (string, interface{}) {
 	app.Items[0].External = external
 	app.AppStatus = resource.AppBuilding
 
-	app.Items[0].Status = resource.AppBuilding
 	apiserver.InsertApp(app)
+
 	return r.StatusCreated, "ok"
 }
 
@@ -82,7 +70,7 @@ func DeleteApp(request *http.Request) (string, interface{}) {
 	id, _ := strconv.ParseUint(mux.Vars(request)["id"], 10, 64)
 	namespace := mux.Vars(request)["namespace"]
 	app := apiserver.QueryAppById(uint(id))
-	apiserver.DeleteApp(app)
+
 	for _, service := range app.Items {
 		appName := service.Name
 
@@ -93,14 +81,6 @@ func DeleteApp(request *http.Request) (string, interface{}) {
 			return r.StatusInternalServerError, "delete application err: " + err.Error()
 		}
 
-		if !cache.ExsitResource(namespace, appName, resource.ResourceKindConfigMap) {
-			return r.StatusNotFound, "configMap named " + appName + ` does't exist`
-		}
-
-		if err := k8sclient.DeleteResource(cache.Store.ConfigMapCache.List[namespace][appName]); err != nil {
-			return r.StatusInternalServerError, "delete application err: " + err.Error()
-		}
-
 		if !cache.ExsitResource(namespace, appName, resource.ResourceKindService) {
 			return r.StatusNotFound, "application named " + appName + ` does't exist`
 		}
@@ -108,58 +88,17 @@ func DeleteApp(request *http.Request) (string, interface{}) {
 			return r.StatusInternalServerError, "delete application err: " + err.Error()
 		}
 	}
+
+	for _, svc := range app.Items {
+		delete(cache.Store.ServiceCache.List[namespace], svc.Name)
+		delete(cache.Store.DeploymentCache.List[namespace], svc.Name)
+		for _, c := range svc.Items {
+			delete(cache.Store.PodCache.List[namespace], c.Name)
+		}
+	}
+
+	apiserver.DeleteApp(app)
 	return r.StatusNoContent, "ok"
-}
-
-func UpdateAppConfig(request *http.Request) (string, interface{}) {
-	app, err := validateApp(request)
-	if err != nil {
-		return r.StatusBadRequest, err
-	}
-	// id, _ := strconv.ParseUint(mux.Vars(request)["id"], 10, 64)
-	// app := apiserver.QueryById(uint(id))
-	appName := app.Items[0].Name
-	namespace := mux.Vars(request)["namespace"]
-	verb := mux.Vars(request)["verb"] //verb the action of app , scale or expansion or roll
-
-	if !cache.ExsitResource(namespace, appName, resource.ResourceKindDeployment) {
-		return r.StatusNotFound, "service named " + appName + ` does't exist`
-	}
-	deploy := cache.Store.DeploymentCache.List[namespace][appName]
-
-	if verb == "scale" {
-		deploy.Spec.Replicas = parseUtil.IntToInt32Pointer(app.Items[0].InstanceCount)
-	}
-
-	if verb == "expansion" {
-		deploy.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
-			Limits: v1.ResourceList{
-				v1.ResourceCPU:    res.MustParse(app.Items[0].Config.BaseConfig.Cpu),    //TODO 根据前端传入的值做资源限制
-				v1.ResourceMemory: res.MustParse(app.Items[0].Config.BaseConfig.Memory), //TODO 根据前端传入的值做资源限制
-			},
-			Requests: v1.ResourceList{
-				v1.ResourceCPU:    res.MustParse(app.Items[0].Config.BaseConfig.Cpu),
-				v1.ResourceMemory: res.MustParse(app.Items[0].Config.BaseConfig.Memory),
-			},
-		}
-	}
-
-	if verb == "roll" {
-		deploy.Spec.Template.Spec.Containers[0].Image = app.Items[0].Image
-		deploy.Spec.Strategy = extensions.DeploymentStrategy{
-			Type: extensions.RollingUpdateDeploymentStrategyType,
-			RollingUpdate: &extensions.RollingUpdateDeployment{
-				MaxUnavailable: &intstr.IntOrString{Type: intstr.String, StrVal: "20%"},
-				MaxSurge:       &intstr.IntOrString{Type: intstr.String, StrVal: "120%"},
-			},
-		}
-	}
-
-	if err := k8sclient.UpdateResouce(&deploy); err != nil {
-		return r.StatusInternalServerError, "rolling updte application named " + appName + ` failed`
-	}
-
-	return r.StatusCreated, "ok"
 }
 
 func StopOrStartOrRedeployApp(request *http.Request) (string, interface{}) {

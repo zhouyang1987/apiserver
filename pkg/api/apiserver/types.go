@@ -27,17 +27,9 @@ type Service struct {
 	External      string         `json:"external,omitempty"`
 	LoadbalanceIp string         `json:"loadbalanceIp,omitempty"`
 	Config        *ServiceConfig `json:"config,omitempty"`
+	AppName       string         `json:"appName,omitempty"`
 	Items         []*Container   `json:"containers,omitempty"`
 	AppId         uint           `json:"appId,omitempty"`
-}
-
-type ServiceConfig struct {
-	ID          uint         `json:"id"`
-	CreatedAt   time.Time    `json:"createAt"`
-	BaseConfig  *BaseConfig  `json:"base,omitempty"`
-	ConfigMap   *ConfigMap   `json:"config,omitempty"`
-	SuperConfig *SuperConfig `json:"super,omitempty"`
-	ServiceId   uint
 }
 
 type Container struct {
@@ -47,15 +39,25 @@ type Container struct {
 	Image     string           `json:"image,omitempty"`
 	Status    int              `json:"status,omitempty"`
 	Internal  string           `json:"internal,omitempty"`
+	AppName   string           `json:"appName,omitempty"`
 	Config    *ContainerConfig `json:"config,omitempty"`
 	ServiceId uint
+}
+
+type ServiceConfig struct {
+	ID          uint         `json:"id"`
+	CreatedAt   time.Time    `json:"createAt"`
+	BaseConfig  *BaseConfig  `json:"base,omitempty"`
+	ConfigGroup *ConfigGroup `json:"configGroup,omitempty"`
+	SuperConfig *SuperConfig `json:"super,omitempty"`
+	ServiceId   uint
 }
 
 type ContainerConfig struct {
 	ID          uint         `json:"id"`
 	CreatedAt   time.Time    `json:"createAt"`
 	BaseConfig  *BaseConfig  `json:"base,omitempty"`
-	ConfigMap   *ConfigMap   `json:"config,omitempty"`
+	ConfigGroup *ConfigGroup `json:"configGroup,omitempty"`
 	SuperConfig *SuperConfig `json:"super,omitempty"`
 	ContainerId uint
 }
@@ -78,22 +80,23 @@ type Volume struct {
 	BaseConfigId uint
 }
 
-type Config struct {
-	ID         uint         `json:"id"`
-	CreatedAt  time.Time    `json:"createAt"`
-	Namespace  string       `json:"namespace"`
-	Name       string       `json:"name,omitempty" `
-	ConfigMaps []*ConfigMap `json:"items,omitempty" `
+type ConfigGroup struct {
+	ID              uint         `json:"id"`
+	CreatedAt       time.Time    `json:"createAt"`
+	Namespace       string       `json:"namespace"`
+	Name            string       `json:"name,omitempty"`
+	ServiceName     string       `json:"serviceName,omitempty"`
+	ConfigMaps      []*ConfigMap `json:"items,omitempty"`
+	ServiceConfigId uint
 }
 
 type ConfigMap struct {
-	ID              uint      `json:"id"`
-	CreatedAt       time.Time `json:"createAt"`
-	Name            string    `json:"name,omitempty" `
-	Content         string    `json:"content,omitempty"`
-	ContainerPath   string    `json:"containerPath,omitempty"`
-	ServiceConfigId uint
-	ConfigId        uint
+	ID            uint      `json:"id"`
+	CreatedAt     time.Time `json:"createAt"`
+	Name          string    `json:"name,omitempty" `
+	Content       string    `json:"content,omitempty"`
+	ContainerPath string    `json:"containerPath,omitempty"`
+	ConfigGroupId uint
 }
 
 type SuperConfig struct {
@@ -121,14 +124,6 @@ type Port struct {
 	SuperConfigId uint
 }
 
-type Logs struct {
-	ID        uint      `json:"id"`
-	CreatedAt time.Time `json:"createAt"`
-	UserName  string    `json:",omitempty"`
-	AppName   string    `json:",omitempty"`
-	EventType string    `json:",omitempty"`
-}
-
 type ScaleOption struct {
 	ServiceInstanceCnt int `json:"serviceInstanceCnt"`
 }
@@ -139,8 +134,8 @@ type ExpansionOption struct {
 }
 
 type RollOption struct {
-	Image  string     `json:"image"`
-	Conifg *ConfigMap `json:"config"`
+	Image  string       `json:"image"`
+	Conifg *ConfigGroup `json:"config"`
 }
 
 type Deploy struct {
@@ -156,4 +151,12 @@ type Item struct {
 	ProjectName   string `json:"projectName,omitempty"`
 	DockerRepoUrl string `json:"dockerRepoUrl,omitempty"`
 	Tag           string `json:"tag,omitempty"`
+}
+
+type Logs struct {
+	ID        uint      `json:"id"`
+	CreatedAt time.Time `json:"createAt"`
+	UserName  string    `json:",omitempty"`
+	AppName   string    `json:",omitempty"`
+	EventType string    `json:",omitempty"`
 }
