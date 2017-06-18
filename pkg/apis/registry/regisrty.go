@@ -77,6 +77,7 @@ func GetImages(req *http.Request) (string, interface{}) {
 		for _, m := range set {
 			image.Name = name
 			image.TagLen = len(tags.([]string))
+			image.Tags = tags.([]string)
 			image.Fest = append(image.Fest, m)
 		}
 		if image.Name != "" {
@@ -84,14 +85,17 @@ func GetImages(req *http.Request) (string, interface{}) {
 		}
 	} else {
 		for k, v := range store.cache {
+			tgs := []string{}
 			image := &regModel.Image{}
 			for _, m := range set {
 				if k == m.Name {
 					image.Name = k
 					image.TagLen = len(v.([]string))
+					tgs = append(tgs, m.Tag)
 					image.Fest = append(image.Fest, m)
 				}
 			}
+			image.Tags = tgs
 			if image.Name != "" {
 				imageSet = append(imageSet, image)
 			}

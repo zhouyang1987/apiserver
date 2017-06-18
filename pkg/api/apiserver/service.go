@@ -27,7 +27,8 @@ func QueryServices(serviceName string, pageCnt, pageNum int, appId uint) (list [
 				config        = &ContainerConfig{}
 				serviceConfig = &ServiceConfig{}
 				base          = &BaseConfig{}
-				configmap     = &ConfigMap{}
+				configGroup   = &ConfigGroup{}
+				configmaps    = []*ConfigMap{}
 				superConfig   = &SuperConfig{}
 				volumes       []*Volume
 				envs          []*Env
@@ -44,8 +45,10 @@ func QueryServices(serviceName string, pageCnt, pageNum int, appId uint) (list [
 				base.Volumes = volumes
 				// config.BaseConfig = base
 
-				db.First(configmap, ConfigMap{ServiceConfigId: config.ID})
-				// config.ConfigMap = configmap
+				db.First(configGroup, ConfigGroup{ServiceConfigId: config.ID})
+
+				db.Find(&configmaps, ConfigMap{ConfigGroupId: configGroup.ID})
+				configGroup.ConfigMaps = configmaps
 
 				db.First(superConfig, SuperConfig{ServiceConfigId: config.ID})
 				db.Find(&envs, Env{SuperConfigId: superConfig.ID})
@@ -56,7 +59,7 @@ func QueryServices(serviceName string, pageCnt, pageNum int, appId uint) (list [
 			}
 			db.First(serviceConfig, ServiceConfig{ServiceId: svc.ID})
 			serviceConfig.BaseConfig = base
-			serviceConfig.ConfigMap = configmap
+			serviceConfig.ConfigGroup = configGroup
 			serviceConfig.SuperConfig = superConfig
 			svc.Config = serviceConfig
 		}
@@ -65,14 +68,32 @@ func QueryServices(serviceName string, pageCnt, pageNum int, appId uint) (list [
 }
 
 func InsertService(svc *Service) {
-	if db.Model(svc).Where("name=?", svc.Name).First(svc).RecordNotFound() {
-		db.Model(svc).Save(svc)
+	svcConfig := svc.Config
+	if len(svc.Items) != 0 {
+		svc.Items[0].Config = &ContainerConfig{
+			BaseConfig:  svcConfig.BaseConfig,
+			SuperConfig: svcConfig.SuperConfig,
+		}
 	}
+
+	if svcConfig.ConfigGroup != nil {
+		for _, c := range svcConfig.ConfigGroup.ConfigMaps {
+			UpdateConfigMap(c)
+		}
+	}
+
+	configGroupId := svcConfig.ConfigGroup.ID
+	svcConfig.ConfigGroup = nil
+
+	if db.Model(svc).Where("name=?", svc.Name).First(svc).RecordNotFound() {
+		db.Model(svc).Create(svc)
+	}
+
+	db.Model(new(ConfigGroup)).Set("gorm:save_associations", false).Update(&ConfigGroup{ServiceConfigId: svc.Config.ID, ServiceName: svc.Name, ID: configGroupId})
 }
 
 func DeleteService(svc *Service) {
 	db.Delete(svc)
-
 	svcCfg := svc.Config
 	db.Delete(svcCfg, "service_id=?", svc.ID)
 
@@ -82,9 +103,6 @@ func DeleteService(svc *Service) {
 	for _, volume := range svcCfgBase.Volumes {
 		db.Delete(volume, "base_config_id=?", svcCfgBase.ID)
 	}
-
-	svcCfgMap := svcCfg.ConfigMap
-	db.Delete(svcCfgMap, "service_config_id=?", svcCfg.ID)
 
 	svcSuper := svcCfg.SuperConfig
 	db.Delete(svcSuper, "service_config_id=?", svcCfg.ID)
@@ -98,7 +116,17 @@ func DeleteService(svc *Service) {
 
 	for _, c := range svc.Items {
 		db.Delete(c)
-		db.Delete(c.Config, "container_id=?", c.ID)
+		if c.Config != nil {
+			db.Delete(c.Config, "container_id=?", c.ID)
+		}
+	}
+
+	if svc.Config.ConfigGroup != nil {
+		for _, c := range svc.Config.ConfigGroup.ConfigMaps {
+			c.ContainerPath = ""
+		}
+		db.Model(new(ConfigGroup)).Update(svc.Config.ConfigGroup)
+		db.Exec("update config_group set service_config_id = ?,service_name=?", 0, "")
 	}
 }
 
@@ -110,9 +138,10 @@ func QueryServiceById(id uint) *Service {
 	svc := &Service{}
 	var (
 		containerList []*Container
-		config        = &ContainerConfig{}
+		serviceConfig = &ServiceConfig{}
 		base          = &BaseConfig{}
-		configmap     = &ConfigMap{}
+		configGroup   = &ConfigGroup{}
+		configmaps    = []*ConfigMap{}
 		superConfig   = &SuperConfig{}
 		volumes       []*Volume
 		envs          []*Env
@@ -121,31 +150,27 @@ func QueryServiceById(id uint) *Service {
 	if db.First(svc, id).Error == nil && svc.ID != 0 {
 		db.Find(&containerList, Container{ServiceId: svc.ID})
 		svc.Items = containerList
-		for _, container := range containerList {
-			db.Find(config, ContainerConfig{ContainerId: container.ID})
-			container.Config = config
 
-			db.First(base, BaseConfig{ServiceConfigId: config.ID})
-			db.Find(&volumes, Volume{BaseConfigId: base.ID})
-			base.Volumes = volumes
-			config.BaseConfig = base
+		db.Find(serviceConfig, ServiceConfig{ServiceId: svc.ID})
+		svc.Config = serviceConfig
 
-			db.First(configmap, ConfigMap{ServiceConfigId: config.ID})
-			config.ConfigMap = configmap
+		db.First(base, BaseConfig{ServiceConfigId: svc.ID})
+		db.Find(&volumes, Volume{BaseConfigId: base.ID})
+		base.Volumes = volumes
+		serviceConfig.BaseConfig = base
 
-			db.First(superConfig, SuperConfig{ServiceConfigId: config.ID})
-			db.Find(&envs, Env{SuperConfigId: superConfig.ID})
-			db.Find(&ports, Port{SuperConfigId: superConfig.ID})
-			superConfig.Envs = envs
-			superConfig.Ports = ports
-			config.SuperConfig = superConfig
+		db.First(configGroup, ConfigGroup{ServiceConfigId: serviceConfig.ID})
+		serviceConfig.ConfigGroup = configGroup
 
-			svc.Config = &ServiceConfig{
-				BaseConfig:  config.BaseConfig,
-				ConfigMap:   config.ConfigMap,
-				SuperConfig: config.SuperConfig,
-			}
-		}
+		db.Find(&configmaps, ConfigMap{ConfigGroupId: configGroup.ID})
+		configGroup.ConfigMaps = configmaps
+
+		db.First(superConfig, SuperConfig{ServiceConfigId: serviceConfig.ID})
+		db.Find(&envs, Env{SuperConfigId: superConfig.ID})
+		db.Find(&ports, Port{SuperConfigId: superConfig.ID})
+		superConfig.Envs = envs
+		superConfig.Ports = ports
+		serviceConfig.SuperConfig = superConfig
 	}
 
 	return svc

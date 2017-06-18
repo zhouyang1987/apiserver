@@ -53,7 +53,7 @@ func DeleteConfigItem(request *http.Request) (string, interface{}) {
 	itemid, _ := strconv.ParseUint(mux.Vars(request)["itemId"], 10, 64)
 	apiserver.DeleteConfigItem(uint(itemid))
 
-	id, _ := strconv.ParseUint(mux.Vars(request)["itemId"], 10, 64)
+	id, _ := strconv.ParseUint(mux.Vars(request)["id"], 10, 64)
 	cfg := apiserver.QueryConfigById(uint(id))
 	cfgMap := configMap.NewConfigMapByConfig(cfg)
 	if err := k8sclient.UpdateResouce(&cfgMap); err != nil {
@@ -68,7 +68,7 @@ func CreateConfigItem(request *http.Request) (string, interface{}) {
 	if err != nil {
 		return r.StatusInternalServerError, err
 	}
-	cfgMap.ConfigId = uint(id)
+	cfgMap.ConfigGroupId = uint(id)
 	apiserver.InsertConfigItem(cfgMap)
 
 	itemid, _ := strconv.ParseUint(mux.Vars(request)["itemId"], 10, 64)
@@ -83,8 +83,8 @@ func CreateConfigItem(request *http.Request) (string, interface{}) {
 	return r.StatusCreated, "ok"
 }
 
-func validate(request *http.Request) (*apiserver.Config, error) {
-	config := &apiserver.Config{}
+func validate(request *http.Request) (*apiserver.ConfigGroup, error) {
+	config := &apiserver.ConfigGroup{}
 	if err := json.NewDecoder(request.Body).Decode(config); err != nil {
 		return nil, err
 	}

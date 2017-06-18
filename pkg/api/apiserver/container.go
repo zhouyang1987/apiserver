@@ -24,7 +24,8 @@ func QueryContainers(containerName string, pageCnt, pageNum int, serviceId uint)
 		var (
 			config      = &ContainerConfig{}
 			base        = &BaseConfig{}
-			configmap   = &ConfigMap{}
+			configGroup = &ConfigGroup{}
+			configmaps  = []*ConfigMap{}
 			superConfig = &SuperConfig{}
 			volumes     []*Volume
 			envs        []*Env
@@ -38,8 +39,11 @@ func QueryContainers(containerName string, pageCnt, pageNum int, serviceId uint)
 		base.Volumes = volumes
 		config.BaseConfig = base
 
-		db.First(configmap, ConfigMap{ServiceConfigId: config.ID})
-		config.ConfigMap = configmap
+		db.First(configGroup, ConfigGroup{ServiceConfigId: config.ID})
+		config.ConfigGroup = configGroup
+
+		db.Find(&configmaps, ConfigMap{ConfigGroupId: config.ID})
+		configGroup.ConfigMaps = configmaps
 
 		db.First(superConfig, SuperConfig{ServiceConfigId: config.ID})
 		db.Find(&envs, Env{SuperConfigId: superConfig.ID})
@@ -80,14 +84,3 @@ func InsertContainer(container *Container) {
 		db.Model(container).Save(container)
 	}
 }
-
-/*
-//we not plan to provide those api of the container
-func InsertContainer(container *Container) {}
-
-func DeleteContainer(container *Container) {}
-
-func UpdateContainer(container *Container) {}
-
-func QueryContainerById(id uint) {}
-*/

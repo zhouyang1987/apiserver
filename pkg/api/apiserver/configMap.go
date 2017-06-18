@@ -14,20 +14,24 @@ import ()
 // 	return
 // }
 
-func UpdateConfig(c *Config) {
+func UpdateConfig(c *ConfigGroup) {
+	db.Model(c).Update(c)
+}
+
+func UpdateConfigMap(c *ConfigMap) {
 	db.Model(c).Update(c)
 }
 
 func DeleteConfig(id uint) {
-	db.Model(new(Config)).Delete(new(Config), id)
-	db.Model(new(ConfigMap)).Delete(new(ConfigMap), "config_id=? ", id)
+	db.Model(new(ConfigGroup)).Delete(new(ConfigGroup), id)
+	db.Model(new(ConfigMap)).Delete(new(ConfigMap), "config_group_id=? ", id)
 }
 
 func DeleteConfigItem(id uint) {
 	db.Model(new(ConfigMap)).Delete(new(ConfigMap), id)
 }
 
-func InsertConfig(c *Config) {
+func InsertConfig(c *ConfigGroup) {
 	db.Model(c).Create(c)
 }
 
@@ -35,28 +39,28 @@ func InsertConfigItem(c *ConfigMap) {
 	db.Model(c).Create(c)
 }
 
-func QueryConfigById(id uint) *Config {
-	cfg := &Config{}
+func QueryConfigById(id uint) *ConfigGroup {
+	cfg := &ConfigGroup{}
 	db.Model(new(ConfigMap)).First(cfg, id)
 
 	var cfgmaps []*ConfigMap
-	db.Model(new(ConfigMap)).Find(&cfgmaps, "config_id=?", cfg.ID)
+	db.Model(new(ConfigMap)).Find(&cfgmaps, "config_group_id=?", cfg.ID)
 	cfg.ConfigMaps = cfgmaps
 	return cfg
 }
 
-func QueryConfigs(configName string, pageCnt, pageNum int) (list []*Config, total int) {
+func QueryConfigs(configName string, pageCnt, pageNum int) (list []*ConfigGroup, total int) {
 	if configName != "" {
 		db.Where("name like ? ", `%`+configName+`%`).Offset(pageCnt * pageNum).Limit(pageCnt).Order("name desc").Find(&list)
-		db.Model(new(Config)).Where("name like ?", configName).Count(&total)
+		db.Model(new(ConfigGroup)).Where("name like ?", configName).Count(&total)
 	} else {
 		db.Offset(pageCnt * pageNum).Limit(pageCnt).Order("name desc").Find(&list)
-		db.Model(new(Config)).Count(&total)
+		db.Model(new(ConfigGroup)).Count(&total)
 	}
 
 	for _, cfg := range list {
 		var cfgmaps []*ConfigMap
-		db.Model(new(ConfigMap)).Find(&cfgmaps, "config_id=?", cfg.ID)
+		db.Model(new(ConfigMap)).Find(&cfgmaps, "config_group_id=?", cfg.ID)
 		cfg.ConfigMaps = cfgmaps
 	}
 
