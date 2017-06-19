@@ -139,18 +139,44 @@ type RollOption struct {
 }
 
 type Deploy struct {
-	ID              uint    `json:"requirementId,omitempty"`
-	requirementName string  `json:"requirementName,omitempty"`
-	Type            string  `json:"type,omitempty"`
-	Items           []*Item `json:"features,omitempty"`
+	ID              uint          `json:"requirementId,omitempty"`
+	requirementName string        `json:"requirementName,omitempty"`
+	Type            string        `json:"type,omitempty"` //previewDeploy,productDeploy,rollBack
+	Items           []*DeployItem `json:"features,omitempty"`
 }
 
-type Item struct {
+type DeployItem struct {
 	ID            uint   `json:"id,omitempty"`
 	ProjectId     uint   `projectId:"id,omitempty"`
 	ProjectName   string `json:"projectName,omitempty"`
 	DockerRepoUrl string `json:"dockerRepoUrl,omitempty"`
 	Tag           string `json:"tag,omitempty"`
+	DeployId      uint   `json:"deployId,omitempty"`
+}
+
+type ProjectConfig struct {
+	ID        uint      `json:"id,omitempty"`
+	ProjectId uint      `json:"projectId,omitempty"`
+	Key       string    `json:"key,omitempty"`
+	Val       string    `json:"val,omitempty"`
+	Type      string    `json:"type,omitempty"`
+	CreateAt  time.Time `json:"createAt,omitempty"`
+	UpdateAt  time.Time `json:"modifyAt,omitempty"`
+	Operator  string    `json:"operator,omitempty"`
+}
+
+type Result struct {
+	ID             uint   `json:"requirementId,omitempty"`
+	CallbackResult string `json:"callbackResult,omityempty"` //SUCCESS,FAILURE,UNKNOW
+	CallbackType   string `json:"callbackType,omitempty"`    //previewDeploy,productDeploy,rollBack
+	Operator       string `json:"operator,omitempty"`
+}
+
+type ResultItem struct {
+	ID             uint   `json:"id,omitempty"`
+	CurrentVersion string `json:"currentVersion,omitempty"`
+	Status         string `json:"status,omityempty"` //SUCCESS,FAILURE,UNKNOW
+	ResultId       uint   `json:"resultId,omitempty"`
 }
 
 type Logs struct {

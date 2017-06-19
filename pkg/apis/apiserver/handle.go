@@ -57,6 +57,10 @@ func InstallApi(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/configs/{id}", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/configs/{id}/items", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/configs/{id}/items/{itemId}", "OPTIONS", Option)
+
+	//install deploy's api handle
+	r.RegisterHttpHandler(router, "/{namespace}/deploys", "POST", CreatDeploy)
+	r.RegisterHttpHandler(router, "/{namespace}/deploys", "OPTIONS", Option)
 }
 
 func Option(request *http.Request) (string, interface{}) {

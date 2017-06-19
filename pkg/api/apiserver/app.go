@@ -1,18 +1,5 @@
 package apiserver
 
-import (
-	"apiserver/pkg/storage/mysqld"
-)
-
-var (
-	db = mysqld.GetDB()
-)
-
-func init() {
-	db.SingularTable(true)
-	db.CreateTable(&App{}, &Service{}, new(Container), new(Port), new(Env), new(SuperConfig), new(ConfigMap), new(Volume), new(BaseConfig), new(ServiceConfig), new(ContainerConfig), new(ConfigGroup))
-}
-
 func QueryApps(namespace, appName string, pageCnt, pageNum int) (list []*App, total int) {
 	if appName != "" {
 		db.Where("user_name=? and name like ? ", namespace, `%`+appName+`%`).Offset(pageCnt * pageNum).Limit(pageCnt).Order("name desc").Find(&list)
@@ -84,14 +71,17 @@ func InsertApp(app *App) {
 			UpdateConfigMap(c)
 		}
 	}
-	configGroupId := svcConfig.ConfigGroup.ID
+
+	if svcConfig.ConfigGroup != nil {
+		configGroupId := svcConfig.ConfigGroup.ID
+		db.Model(new(ConfigGroup)).Set("gorm:save_associations", false).Update(&ConfigGroup{ServiceConfigId: app.Items[0].Config.ID, ServiceName: app.Items[0].Name, ID: configGroupId})
+	}
 	svcConfig.ConfigGroup = nil
 	if db.Model(app).Where("name=?", app.Name).First(app).RecordNotFound() {
 		app.Items[0].AppName = app.Name
 		db.Model(app).Save(app)
 	}
 
-	db.Model(new(ConfigGroup)).Set("gorm:save_associations", false).Update(&ConfigGroup{ServiceConfigId: app.Items[0].Config.ID, ServiceName: app.Items[0].Name, ID: configGroupId})
 }
 
 func UpdateApp(app *App) {
