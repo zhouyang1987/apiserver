@@ -45,6 +45,9 @@
   - [删除服务配置](#16.3)
   - [删除服务配置子文件](#16.4)
   - [查询服务配置](#16.5)
+* **[发布管理接口](#17)**
+  - [添加发布项目](#17.1)
+  - [项目发布反馈](#17.2)
 
 # <span id="2">协议</span>
 
@@ -205,13 +208,18 @@ Method: GET
                 "memory": "12m",
                 "ServiceConfigId": 1
               },
-              "config": {
-                "id": 1,
-                "createAt": "2017-06-09T12:27:00+08:00",
-                "name": "nginx-test",
-                "content": "{\"appName\":\"nginx\"}",
-                "containerPath": "/opt",
-                "ServiceConfigId": 1
+             "configGroup": {
+                "id":1,
+                "namespace": "oliver",
+                "name": "go-web",
+                "items": [
+                  {
+                    "id":1,
+                    "name": "service-1",
+                    "content": "123456789",
+                    "containerPath": "/opt"
+                  }
+                ]
               },
               "super": {
                 "id": 1,
@@ -275,36 +283,41 @@ Method: POST
 ```
 {
   "nmae": "nginx",
-  "nameSpace": "huangjia",
+  "nameSpace": "oliver",
   "description": "this is a test nginx",
   "serviceCount": 1,
+  "intanceCount": 1,
+  "external": "",
   "services": [
     {
-      "name": "nginx-test",
-      "image": "nginx",
+      "name": "service-1",
       "instanceCount": 1,
+      "image": "hub.mini-paas.io/nginx:latest",
+      "loadbalanceIp": "192.168.99.2",
       "Config": {
         "base": {
-          "cpu": "12Mi",
-          "memory": "12m",
-          "type": 0
+          "cpu": "200m",
+          "memory": "512M",
+          "type": 1
         },
-        "config": {
-          "name": "nginx-test",
-          "content": "{\"appName\":\"nginx\"}",
-          "containerPath": "/opt"
+        "configGroup": {
+          "id":1,
+          "namespace": "oliver",
+          "name": "go-web",
+          "items": [
+            {
+              "id":1,
+              "name": "service-1",
+              "content": "123456789",
+              "containerPath": "/opt"
+            }
+          ]
         },
         "super": {
-          "envs": [
-            {
-              "key": "test",
-              "val": "1"
-            }
-          ],
           "ports": [
             {
-              "containerPort": 8080,
-              "servicePort": 8080,
+              "containerPort": 80,
+              "servicePort": 80,
               "protocol": "TCP"
             }
           ]
@@ -552,34 +565,36 @@ Method: POST
 - ApiURI/api/v1/huangjia/services
 
 ```
-{   
-  "appId":1,
-  "name": "nginx-test-1",
-  "image": "nginx",
+{
+  "appId": 5,
+  "name": "service-2",
   "instanceCount": 1,
-  "loadbalanceIp": "10.39.1.45",
-  "config": {
+  "image": "hub.mini-paas.io/nginx:latest",
+  "loadbalanceIp": "192.168.99.2",
+  "Config": {
     "base": {
-      "cpu": "12Mi",
-      "memory": "12m",
-      "type": 0
+      "cpu": "12m",
+      "memory": "12M",
+      "type": 1
     },
-    "config": {
-      "name": "nginx-test-1",
-      "content": "{\"appName\":\"nginx\"}",
-      "containerPath": "/opt"
+    "configGroup": {
+      "id": 4,
+      "namespace": "oliver",
+      "name": "2",
+      "items": [
+        {
+          "id": 4,
+          "name": "2",
+          "content": "2",
+          "containerPath": "/opt"
+        }
+      ]
     },
     "super": {
-      "envs": [
-        {
-          "key": "test",
-          "val": "1"
-        }
-      ],
       "ports": [
         {
-          "containerPort": 8080,
-          "servicePort": 8080,
+          "containerPort": 80,
+          "servicePort": 80,
           "protocol": "TCP"
         }
       ]
@@ -590,8 +605,9 @@ Method: POST
 **参数说明**
 
 - appId：服务所属应用id
-- config->base：服务的基本配置，包括cpu，memory，还有服务类型，服务类型两种：有状态  1 无状态 0 ，默认是无状态
-- config->config：服务的配置文件挂载
+- config->config：服务的基本配置，包括cpu，memory，还有服务类型，服务类型两种：有状态  1 无状态 0 ，默认是无状态
+- config->configGroup：服务的配置组挂载
+- config->configGroup->item：具体挂载配置组中的哪一个配置文件，可以挂载多个，默认挂载全部
 - config->super：包括服务的端口映射和环境变量的定义
 
 
@@ -1426,3 +1442,62 @@ Method: GET
     }
 }
 ```
+
+## <span id="17">发布管理接口</span>
+---
+
+#### <span id="17.1">添加发布项目</span>
+
+
+URI: ApiURI/api/v1/{namespace}/deploys
+
+Method: POST
+
+**参数说明**
+
+- namespace: 用户命名空间  必须字段
+
+
+
+**请求**
+
+- ApiURI/api/v1/huangjia/deploys
+
+```
+[
+  {
+    "requirementId": 1111,
+    "requirementName": "web",
+    "type": "previewDeploy",
+    "features": [
+      {
+        "id": 2222,
+        "projectId": 3333,
+        "projectName": "webservice",
+        "dockerRepoUrl": "10.252.61.164:5000/stark.l/webservice",
+        "tag": "v1.0.0"
+      },
+      {
+        "id": 2223,
+        "projectId": 3334,
+        "projectName": "consumer-service",
+        "dockerRepoUrl": "10.252.61.164:5000/stark.l/ consumer-service",
+        "tag": "v1.0.0"
+      }
+    ]
+  }
+]
+
+```
+
+
+**响应**
+
+```
+{
+    "apiversion": "v1",
+    "status": "201",
+    "data": "ok"
+}
+```
+
