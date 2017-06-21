@@ -165,6 +165,16 @@ type ProjectConfig struct {
 	Operator  string    `json:"operator,omitempty"`
 }
 
+type ProjectConfigOption struct {
+	ProjectId uint   `json:"projectId,omitempty"`
+	Key       string `json:"key,omitempty"`
+	Val       string `json:"val,omitempty"`
+	Type      string `json:"type,omitempty"`
+	CreateAt  string `json:"createAt,omitempty"`
+	UpdateAt  string `json:"modifyAt,omitempty"`
+	Operator  string `json:"operator,omitempty"`
+}
+
 type Result struct {
 	ID             uint   `json:"requirementId,omitempty"`
 	CallbackResult string `json:"callbackResult,omityempty"` //SUCCESS,FAILURE,UNKNOW

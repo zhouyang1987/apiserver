@@ -59,13 +59,6 @@ func CreateService(request *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, err
 	}
 
-	if app.Items[0].Config.ConfigGroup != nil {
-		cfgMap := configMap.NewConfigMap(app)
-		if err := k8sclient.CreateResource(cfgMap); err != nil {
-			return r.StatusInternalServerError, err
-		}
-	}
-
 	k8sDeploy := deployment.NewDeployment(app)
 	if cache.ExsitResource(app.UserName, reqservice.Name, resource.ResourceKindDeployment) {
 		return r.StatusForbidden, "the deployment exist"
