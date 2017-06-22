@@ -131,7 +131,7 @@ func DeleteService(svc *Service) {
 }
 
 func UpdateService(svc *Service) {
-	db.Model(svc).Update(svc)
+	db.Model(svc).Set("gorm:save_associations", false).Update(svc)
 }
 
 func QueryServiceById(id uint) *Service {
