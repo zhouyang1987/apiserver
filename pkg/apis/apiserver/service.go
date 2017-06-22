@@ -64,7 +64,7 @@ func CreateService(request *http.Request) (string, interface{}) {
 		return r.StatusForbidden, "the deployment exist"
 	}
 	if err = k8sclient.CreateResource(k8sDeploy); err != nil {
-		k8sclient.DeleteResource(svc)
+		k8sclient.DeleteResource(*svc)
 		return r.StatusInternalServerError, err
 	}
 	external := fmt.Sprintf("http://%s:%v", configz.GetString("apiserver", "clusterNodes", "127.0.0.1"), svc.Spec.Ports[0].NodePort)
