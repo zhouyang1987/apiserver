@@ -41,6 +41,7 @@ func InstallApi(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/containers", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/containers/", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/containers/{name}/events", "OPTIONS", Option)
+	r.RegisterHttpHandler(router, "/{namespace}/containers/{name}/logs", "GET", GetContainerLog)
 
 	//install metrics's api handle
 	r.RegisterHttpHandler(router, "/{namespace}/metrics/{name}/{metric}/{type}", "OPTIONS", Option)

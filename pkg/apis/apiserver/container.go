@@ -13,7 +13,14 @@ import (
 	"apiserver/pkg/storage/cache"
 
 	"github.com/gorilla/mux"
+	"k8s.io/client-go/pkg/api/v1"
 )
+
+// maximum number of lines loaded from the apiserver
+var lineReadLimit int64 = 5000
+
+// maximum number of bytes loaded from the apiserver
+var byteReadLimit int64 = 500000
 
 func GetContainers(request *http.Request) (string, interface{}) {
 	// namespace := mux.Vars(request)["namespace"]
@@ -91,4 +98,24 @@ func GetContainerEvents(request *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, err
 	}
 	return r.StatusOK, map[string]interface{}{"events": list}
+}
+
+func GetContainerLog(request *http.Request) (string, interface{}) {
+	namespace := mux.Vars(request)["namespace"]
+	podName := mux.Vars(request)["name"]
+	containerName := cache.Store.PodCache.List[namespace][podName].Spec.Containers[0].Name
+	logOptions := &v1.PodLogOptions{
+		Container:  containerName,
+		Follow:     false,
+		Previous:   false,
+		Timestamps: true,
+		LimitBytes: &byteReadLimit,
+		TailLines:  &lineReadLimit,
+	}
+
+	result, err := k8sclient.GetLogForContainer(namespace, podName, logOptions)
+	if err != nil {
+		return r.StatusInternalServerError, err
+	}
+	return r.StatusOK, map[string]interface{}{"logs": result}
 }

@@ -66,20 +66,21 @@ func InsertApp(app *App) {
 		}
 	}
 
+	configGroup := svcConfig.ConfigGroup
+	svcConfig.ConfigGroup = nil
+	if db.Model(app).Where("name=?", app.Name).First(app).RecordNotFound() {
+		app.Items[0].AppName = app.Name
+		db.Model(app).Save(app)
+	}
+
 	if svcConfig.ConfigGroup != nil {
 		for _, c := range svcConfig.ConfigGroup.ConfigMaps {
 			UpdateConfigMap(c)
 		}
 	}
 
-	if svcConfig.ConfigGroup != nil {
-		configGroupId := svcConfig.ConfigGroup.ID
-		db.Model(new(ConfigGroup)).Set("gorm:save_associations", false).Update(&ConfigGroup{ServiceConfigId: app.Items[0].Config.ID, ServiceName: app.Items[0].Name, ID: configGroupId})
-	}
-	svcConfig.ConfigGroup = nil
-	if db.Model(app).Where("name=?", app.Name).First(app).RecordNotFound() {
-		app.Items[0].AppName = app.Name
-		db.Model(app).Save(app)
+	if configGroup != nil {
+		db.Model(new(ConfigGroup)).Set("gorm:save_associations", false).Update(&ConfigGroup{ServiceConfigId: svcConfig.ID, ServiceName: app.Items[0].Name, ID: configGroup.ID})
 	}
 
 }

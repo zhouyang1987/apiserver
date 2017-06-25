@@ -142,6 +142,7 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 			return r.StatusInternalServerError, "rolling updte application named " + svc.Name + ` failed`
 		}
 		for _, container := range svc.Items {
+			delete(cache.Store.PodCache.List[namespace], container.Name)
 			apiserver.DeleteContainer(container)
 		}
 		apiserver.UpdateService(svc)

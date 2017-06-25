@@ -1,6 +1,7 @@
 package common
 
 import (
+	"io/ioutil"
 	"strings"
 
 	"apiserver/pkg/api/apiserver"
@@ -11,6 +12,7 @@ import (
 	"apiserver/pkg/util/parseUtil"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/pkg/api/v1"
 	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
@@ -373,4 +375,26 @@ func GetEventsForService(namespace, serviceName string) (list []event.Event, err
 
 	}
 	return
+}
+
+func GetLogForContainer(namespace, podName string, logOptions *v1.PodLogOptions) (string, error) {
+	req := client.K8sClient.CoreV1().RESTClient().Get().
+		Namespace(namespace).
+		Name(podName).
+		Resource("pods").
+		SubResource("log").
+		VersionedParams(logOptions, scheme.ParameterCodec)
+
+	readCloser, err := req.Stream()
+	if err != nil {
+		return err.Error(), nil
+	}
+
+	defer readCloser.Close()
+	result, err := ioutil.ReadAll(readCloser)
+	if err != nil {
+		return "", err
+	}
+
+	return string(result), nil
 }
