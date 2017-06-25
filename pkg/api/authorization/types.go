@@ -19,7 +19,7 @@ type User struct {
 	Phone    string    `json:"phone,omitempty"`
 	Count    int       `json:"count,omitempty"`
 	CreateAt time.Time `json:"createAt,omitempty"`
-	GroupId  uint      `json:"groudId,omitempty"`
+	TeamId   uint      `json:"teamId,omitempty"`
 	RoleId   uint      `json:"roleId,omitempty"`
 }
 

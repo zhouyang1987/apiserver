@@ -13,10 +13,10 @@ func NewPodSpec(app *apiserver.App) v1.PodSpec {
 	var (
 		containerPorts       []v1.ContainerPort
 		envs                 []v1.EnvVar
-		volumeMs             []v1.VolumeMount
 		volumes              []v1.Volume
 		resourceRequirements v1.ResourceRequirements
 		svc                  = app.Items[0]
+		containerPath        = ""
 	)
 	if svc.Config != nil {
 		ports := svc.Config.SuperConfig.Ports
@@ -40,8 +40,7 @@ func NewPodSpec(app *apiserver.App) v1.PodSpec {
 			items := []v1.KeyToPath{}
 			for _, configMap := range svc.Config.ConfigGroup.ConfigMaps {
 				items = append(items, v1.KeyToPath{Key: configMap.Name, Path: configMap.Name})
-				volumeMs = append(volumeMs, v1.VolumeMount{Name: svc.Config.ConfigGroup.Name, MountPath: configMap.ContainerPath, ReadOnly: false})
-
+				containerPath = configMap.ContainerPath
 			}
 			volumes = append(volumes, v1.Volume{
 				Name: svc.Config.ConfigGroup.Name,
@@ -79,7 +78,13 @@ func NewPodSpec(app *apiserver.App) v1.PodSpec {
 				Resources:       resourceRequirements,
 				Ports:           containerPorts,
 				Env:             envs,
-				VolumeMounts:    volumeMs,
+				VolumeMounts: []v1.VolumeMount{
+					v1.VolumeMount{
+						Name:      svc.Config.ConfigGroup.Name,
+						MountPath: containerPath,
+						ReadOnly:  false,
+					},
+				},
 			},
 		},
 	}

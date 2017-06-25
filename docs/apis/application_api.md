@@ -35,6 +35,7 @@
   - [获取服务的事件](#13.1)
   - [获取应用pod的cpu/memory实用情况](#13.2)
   - [获取容器的事件](#13.3)
+  - [获取容器的日志](#13.4)
 * **[镜像接口](#14)**
   - [获取镜像列表](#14.1)
 * **[构建接口](#15)**
@@ -48,6 +49,7 @@
 * **[发布管理接口](#17)**
   - [添加发布项目](#17.1)
   - [项目发布反馈](#17.2)
+* **[权限管理接口](#18)**
 
 # <span id="2">协议</span>
 
@@ -1173,6 +1175,35 @@ Method: GET
                 "type": "Normal"
             }
         ]
+    }
+}
+```
+
+#### <span id="13.4">获取容器的日志</span>
+
+
+URI: ApiURI/api/v1/{namespace}/containers/{name}/logs
+
+Method: GET
+
+**参数说明**
+
+- namespace: 镜像所属租户   必须字段
+- name: 容器名称 必须字段
+
+**请求**
+
+- ApiURI//api/v1/huangjia/containers/nginx-test-1891245937-t2j17/events
+
+
+**响应**
+
+```
+{
+    "apiversion": "v1",
+    "status": "200",
+    "data": {
+        "logs": "2017-06-25T06:31:50.276567000Z Using HTTP port: 8443\n2017-06-25T06:31:50.276771000Z Creating API server client for https://10.96.0.1:443\n2017-06-25T06:31:50.309363000Z Successful initial request to the apiserver, version: v1.6.3\n2017-06-25T06:31:50.309547000Z Creating in-cluster Heapster client\n2017-06-25T06:31:50.309676000Z Using service account token for csrf signing\n2017-06-25T06:32:10.727454000Z Getting application global configuration\n2017-06-25T06:32:10.727723000Z Application configuration {\"serverTime\":1498372330724}\n2017-06-25T06:32:11.181796000Z [2017-06-25T06:32:11Z] Incoming HTTP/1.1 GET /api/v1/thirdpartyresource request from 10.244.1.1:57769: {}"
     }
 }
 ```
