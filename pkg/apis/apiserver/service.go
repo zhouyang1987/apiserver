@@ -193,10 +193,10 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 		svc.Items[0].Image = rollOption.Image
 		svc.Config.ConfigGroup = rollOption.Conifg
 
-		cfgMap := configMap.NewConfigMapByService(svc, namespace)
-		if err := k8sclient.UpdateResouce(cfgMap); err != nil {
-			return r.StatusInternalServerError, err
-		}
+		// cfgMap := configMap.NewConfigMapByService(svc, namespace)
+		// if err := k8sclient.UpdateResouce(cfgMap); err != nil {
+		// 	return r.StatusInternalServerError, err
+		// }
 
 		if err := k8sclient.UpdateResouce(&deploy); err != nil {
 			return r.StatusInternalServerError, "rolling updte application named " + svc.Name + ` failed`
