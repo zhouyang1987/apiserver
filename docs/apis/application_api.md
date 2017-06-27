@@ -695,12 +695,20 @@ Method: PUT
 
 ```
 {
-    "image":"nginx:latest",
-    "config":{
-          "name": "nginx-test",
-          "content": "{\"name\":\"huangjia\"}",
-          "containerPath": "/opt"
-        }
+  "image": "nginx:latest",
+  "config": {
+    "id": 1,
+    "namespace": "oliver",
+    "name": "go-web",
+    "items": [
+      {
+        "id": 1,
+        "name": "service-1",
+        "content": "123456789",
+        "containerPath": "/opt"
+      }
+    ]
+  }
 }
 ```
 **说明**
