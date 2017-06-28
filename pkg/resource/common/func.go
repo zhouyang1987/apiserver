@@ -390,7 +390,11 @@ func GetLogForContainer(namespace, podName string, logOptions *v1.PodLogOptions)
 		return err.Error(), nil
 	}
 
-	defer readCloser.Close()
+	defer func() {
+		if err = readCloser.Close(); err != nil {
+			log.Errorf("close readstream err:%v", err)
+		}
+	}()
 	result, err := ioutil.ReadAll(readCloser)
 	if err != nil {
 		return "", err

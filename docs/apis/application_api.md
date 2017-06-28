@@ -36,6 +36,7 @@
   - [获取应用pod的cpu/memory实用情况](#13.2)
   - [获取容器的事件](#13.3)
   - [获取容器的日志](#13.4)
+  - [获取容器的进程](#13.5)
 * **[镜像接口](#14)**
   - [获取镜像列表](#14.1)
 * **[构建接口](#15)**
@@ -1220,6 +1221,51 @@ Method: GET
     }
 }
 ```
+
+#### <span id="13.5">获取容器的进程</span>
+
+
+URI: ApiURI/api/v1/{namespace}/containers/{name}/processes
+
+Method: GET
+
+**参数说明**
+
+- namespace: 镜像所属租户   必须字段
+- name: 容器名称 必须字段
+
+**请求**
+
+- ApiURI//api/v1/huangjia/containers/mysql-test-1891245937-t2j17/processes
+
+
+**响应**
+
+```
+{
+  "apiversion": "v1",
+  "status": "200",
+  "data": {
+    "processes": [
+      {
+        "user": "polkitd",
+        "pid": 6206,
+        "parent_pid": 6188,
+        "start_time": "Jun22",
+        "percent_cpu": 0,
+        "percent_mem": 5.4,
+        "rss": 215646208,
+        "virtual_size": 1622265856,
+        "status": "Ssl",
+        "running_time": "00:07:44",
+        "cgroup_path": "",
+        "cmd": "mysqld"
+      }
+    ]
+  }
+}
+```
+
 
 
 ## <span id="14">镜像接口</span>

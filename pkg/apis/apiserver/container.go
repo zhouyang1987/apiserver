@@ -1,16 +1,21 @@
 package apiserver
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"apiserver/pkg/api/apiserver"
 	"apiserver/pkg/resource"
 
+	"apiserver/pkg/configz"
 	k8sclient "apiserver/pkg/resource/common"
 	r "apiserver/pkg/router"
 	"apiserver/pkg/storage/cache"
+	httpUtil "apiserver/pkg/util/registry"
 
 	"github.com/gorilla/mux"
 	"k8s.io/client-go/pkg/api/v1"
@@ -48,7 +53,9 @@ func RedeployContainer(request *http.Request) (string, interface{}) {
 	}
 	for _, pod := range pods {
 		if pod.Name == container.Name {
-			k8sclient.DeleteResource(&pod)
+			if err = k8sclient.DeleteResource(&pod); err != nil {
+				return r.StatusInternalServerError, err
+			}
 		}
 	}
 
@@ -118,4 +125,29 @@ func GetContainerLog(request *http.Request) (string, interface{}) {
 		return r.StatusInternalServerError, err
 	}
 	return r.StatusOK, map[string]interface{}{"logs": result}
+}
+
+func GetContainerProcess(request *http.Request) (string, interface{}) {
+	namespace := mux.Vars(request)["namespace"]
+	name := mux.Vars(request)["name"]
+	pod, exist := cache.Store.PodCache.List[namespace][name]
+	if !exist {
+		return r.StatusNotFound, fmt.Sprintf("container named [%v] doesn't exist", pod.Name)
+	}
+
+	containerID := strings.Replace(pod.Status.ContainerStatuses[0].ContainerID, "://", "/", -1)
+	tranport := httpUtil.GetHttpTransport(false)
+	url := configz.GetString("apiserver", "cadvisor", "http://127.0.0.1:4194/docker/")
+	client := &http.Client{Transport: tranport}
+	url = fmt.Sprintf(url, pod.Status.HostIP, containerID)
+	res, err := client.Get(url)
+	if err != nil {
+		return r.StatusInternalServerError, fmt.Sprintf("get process of container [%s] err:%v", pod.Name, err.Error())
+	}
+	processes := []*apiserver.Process{}
+	if err = json.NewDecoder(res.Body).Decode(&processes); err != nil {
+		return r.StatusInternalServerError, err
+	}
+
+	return r.StatusOK, map[string]interface{}{"processes": processes}
 }

@@ -209,3 +209,18 @@ func QueryAppsByNamespace(namespace string) []*App {
 	db.Find(&apps, "user_name=?", namespace)
 	return apps
 }
+
+func CountApp() (interface{}, error) {
+	var (
+		ok    = 0
+		stop  = 0
+		fail  = 0
+		build = 0
+		err   error
+	)
+	err = db.Model(new(App)).Where("status =?", 3).Count(&ok).Error
+	err = db.Model(new(App)).Not("status =?", 4).Count(&stop).Error
+	err = db.Model(new(App)).Not("status =?", 2).Count(&fail).Error
+	err = db.Model(new(App)).Not("status =?", 0).Count(&build).Error
+	return map[string]int{"running": ok, "stop": stop, "fail": fail, "building": build}, err
+}

@@ -84,3 +84,18 @@ func InsertContainer(container *Container) {
 		db.Model(container).Save(container)
 	}
 }
+
+func CountContainer() (interface{}, error) {
+	var (
+		ok    = 0
+		stop  = 0
+		fail  = 0
+		build = 0
+		err   error
+	)
+	err = db.Model(new(Container)).Where("status =?", 3).Count(&ok).Error
+	err = db.Model(new(Container)).Not("status =?", 4).Count(&stop).Error
+	err = db.Model(new(Container)).Not("status =?", 2).Count(&fail).Error
+	err = db.Model(new(Container)).Not("status =?", 0).Count(&build).Error
+	return map[string]int{"running": ok, "stop": stop, "fail": fail, "building": build}, err
+}

@@ -189,3 +189,18 @@ func QueryServicesByAppId(id uint) []*Service {
 func UpdateServiceOnly(svc *Service) {
 	db.Model(svc).Set("gorm:save_associations", false).Update(svc)
 }
+
+func CountService() (interface{}, error) {
+	var (
+		ok    = 0
+		stop  = 0
+		fail  = 0
+		build = 0
+		err   error
+	)
+	err = db.Model(new(Service)).Where("status =?", 3).Count(&ok).Error
+	err = db.Model(new(Service)).Not("status =?", 4).Count(&stop).Error
+	err = db.Model(new(Service)).Not("status =?", 2).Count(&fail).Error
+	err = db.Model(new(Service)).Not("status =?", 0).Count(&build).Error
+	return map[string]int{"running": ok, "stop": stop, "fail": fail, "building": build}, err
+}

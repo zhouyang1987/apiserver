@@ -196,3 +196,18 @@ type Logs struct {
 	AppName   string    `json:",omitempty"`
 	EventType string    `json:",omitempty"`
 }
+
+type Process struct {
+	User        string  `json:"user"`
+	PID         int64   `json:"pid"`
+	ParentPID   int64   `json:"parent_pid"`
+	StartTime   string  `json:"start_time"`
+	PercentCPU  float64 `json:"percent_cpu"`
+	PercentMEM  float64 `json:"percent_mem"`
+	rss         int64   `json:"rss"`
+	VirtualSize int64   `json:"virtual_size"`
+	Status      string  `json:"status"`
+	RunningTime string  `json:"running_time"`
+	CgroupPath  string  `json:"cgroup_path"`
+	Cmd         string  `json:"cmd"`
+}

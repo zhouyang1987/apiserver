@@ -46,6 +46,7 @@ func InstallApi(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/containers/", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/containers/{name}/events", "OPTIONS", Option)
 	r.RegisterHttpHandler(router, "/{namespace}/containers/{name}/logs", "GET", GetContainerLog)
+	r.RegisterHttpHandler(router, "/{namespace}/containers/{name}/processes", "GET", GetContainerProcess)
 
 	//install metrics's api handle
 	r.RegisterHttpHandler(router, "/{namespace}/metrics/{name}/{metric}/{type}", "OPTIONS", Option)
@@ -66,6 +67,11 @@ func InstallApi(router *mux.Router) {
 	//install deploy's api handle
 	r.RegisterHttpHandler(router, "/{namespace}/deploys", "POST", CreatDeploy)
 	r.RegisterHttpHandler(router, "/{namespace}/deploys", "OPTIONS", Option)
+
+	//dashboard's count api
+	r.RegisterHttpHandler(router, "/cluster/apps", "GET", GetAppCount)
+	r.RegisterHttpHandler(router, "/cluster/services", "GET", GetServiceCount)
+	r.RegisterHttpHandler(router, "/cluster/containers", "GET", GetContainerCount)
 }
 
 func Option(request *http.Request) (string, interface{}) {
