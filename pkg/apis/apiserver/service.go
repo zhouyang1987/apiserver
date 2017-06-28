@@ -11,7 +11,7 @@ import (
 	"apiserver/pkg/configz"
 	"apiserver/pkg/resource"
 	k8sclient "apiserver/pkg/resource/common"
-	"apiserver/pkg/resource/configMap"
+	// "apiserver/pkg/resource/configMap"
 	"apiserver/pkg/resource/deployment"
 	"apiserver/pkg/resource/service"
 	r "apiserver/pkg/router"

@@ -9,6 +9,10 @@ import (
 )
 
 func InstallApi(router *mux.Router) {
+	//install apiserver's system api,include health check and get apiserver's version api
+	r.RegisterHttpHandler(router, "/apiserver/health", "GET", Health)
+	r.RegisterHttpHandler(router, "/apiserver/version", "GET", GetApiserverInfo)
+
 	//install app's api handle
 	r.RegisterHttpHandler(router, "/{namespace}/apps", "GET", GetApps)
 	r.RegisterHttpHandler(router, "/{namespace}/apps/{id}", "GET", GetApp)

@@ -34,6 +34,10 @@ import (
 func Register(router *mux.Router) {
 	r.RegisterHttpHandler(router, "/{namespace}/images", "GET", GetImages)
 	r.RegisterHttpHandler(router, "/{namespace}/images", "OPTIONS", Option)
+
+	//install apiserver's system api,include health check and get apiserver's version api
+	r.RegisterHttpHandler(router, "/registry/health", "GET", Health)
+	r.RegisterHttpHandler(router, "/registry/version", "GET", GetRegistryInfo)
 	// r.RegisterHttpHandler(router, "/images", "DELETE", DeleteImage)
 }
 

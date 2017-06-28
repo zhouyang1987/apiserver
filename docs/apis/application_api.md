@@ -50,6 +50,11 @@
   - [添加发布项目](#17.1)
   - [项目发布反馈](#17.2)
 * **[权限管理接口](#18)**
+* **[平台组建接口](#17)**
+  - [获取API server健康状况](#18.1)
+  - [获取API server版本信息](#18.2)
+  - [获取registry健康状况](#18.3)
+  - [获取registry版本信息](#18.4)
 
 # <span id="2">协议</span>
 
@@ -1540,3 +1545,123 @@ Method: POST
 }
 ```
 
+
+
+## <span id="18">平台组件接口</span>
+---
+
+#### <span id="18.1">获取API server健康状况</span>
+
+
+URI: ApiURI/api/v1/apiserver/health
+
+Method: GET
+
+**参数说明**
+
+
+
+**请求**
+
+- ApiURI/api/v1/apiserver/health
+
+
+
+**响应**
+
+```
+{
+     "apiversion": "v1",
+     "status": "200",
+     "data": "apiserver is healthy"
+ }
+```
+
+#### <span id="18.2">获取API server版本信息</span>
+
+
+URI: ApiURI/api/v1/apiserver/version
+
+Method: GET
+
+**参数说明**
+
+
+
+**请求**
+
+- ApiURI/api/v1/apiserver/version
+
+
+
+**响应**
+
+```
+{
+     "apiversion": "v1",
+     "status": "200",
+     "data": {
+         "componentName": "apiserver",
+         "version": "v1.0"
+     }
+ }
+```
+
+
+#### <span id="18.3">获取registry健康状况</span>
+
+
+URI: ApiURI/api/v1/registry/health
+
+Method: GET
+
+**参数说明**
+
+
+
+**请求**
+
+- ApiURI/api/v1/registry/health
+
+
+
+**响应**
+
+```
+{
+     "apiversion": "v1",
+     "status": "200",
+     "data": "registry is healthy"
+ }
+```
+
+
+#### <span id="18.4">获取registry版本信息</span>
+
+
+URI: ApiURI/api/v1/registry/version
+
+Method: GET
+
+**参数说明**
+
+
+
+**请求**
+
+- ApiURI/api/v1/regisrty/version
+
+
+
+**响应**
+
+```
+{
+     "apiversion": "v1",
+     "status": "200",
+     "data": {
+         "componentName": "registry",
+         "version": "v1.0"
+     }
+ }
+```
