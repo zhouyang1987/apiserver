@@ -18,6 +18,7 @@ import (
 	httpUtil "apiserver/pkg/util/registry"
 
 	"github.com/gorilla/mux"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 )
 
@@ -67,36 +68,10 @@ func RedeployContainer(request *http.Request) (string, interface{}) {
 	svc = apiserver.QueryServiceById(container.ServiceId)
 	svc.Status = resource.AppRunning
 	apiserver.UpdateService(svc)
-	// if err := ChangeContainerStatus(svc, namespace); err != nil {
-	// 	return r.StatusInternalServerError, err
-	// }
 	return r.StatusCreated, "ok"
 }
 
-func ChangeContainerStatus(svc *apiserver.Service, namespace string) error {
-	time.Sleep(5 * time.Second)
-	podList, err := k8sclient.GetPods(namespace, svc.Name)
-	if err != nil {
-		return err
-	}
-
-	var containers []*apiserver.Container
-	for _, pod := range podList {
-		for _, c := range svc.Items {
-			if c.Name != pod.Name {
-				container := &apiserver.Container{Name: pod.ObjectMeta.Name, Image: svc.Image, Internal: pod.Status.PodIP, ServiceId: svc.ID}
-				// if pod.Status.ContainerStatuses[0].Ready == true {
-				// 	container.Status = resource.AppRunning
-				// }
-				containers = append(containers, container)
-			}
-		}
-	}
-	svc.Items = containers
-	apiserver.UpdateService(svc)
-	return nil
-}
-
+//GetContainerEvents return the pod's events ，default last one hour log
 func GetContainerEvents(request *http.Request) (string, interface{}) {
 	namespace := mux.Vars(request)["namespace"]
 	containerName := mux.Vars(request)["name"]
@@ -107,14 +82,34 @@ func GetContainerEvents(request *http.Request) (string, interface{}) {
 	return r.StatusOK, map[string]interface{}{"events": list}
 }
 
+//GetContainerEvents return the pod's log，default the all log.
+//it suport 1 hour 6 hour 1 day 1 week 1 month
+
 func GetContainerLog(request *http.Request) (string, interface{}) {
 	namespace := mux.Vars(request)["namespace"]
 	podName := mux.Vars(request)["name"]
+	sinceTimeSTR := request.FormValue("sinceTime")
+
+	nowTime := time.Now()
+	sinceTime := metav1.NewTime(nowTime)
+	switch sinceTimeSTR {
+	case "1h":
+		sinceTime = metav1.NewTime(time.Unix(nowTime.Unix()-60*60, 0))
+	case "6h":
+		sinceTime = metav1.NewTime(time.Unix(nowTime.Unix()-6*60*60, 0))
+	case "1d":
+		sinceTime = metav1.NewTime(nowTime.AddDate(0, 0, -1))
+	case "1w":
+		sinceTime = metav1.NewTime(nowTime.AddDate(0, 0, -7))
+	case "1m":
+		sinceTime = metav1.NewTime(nowTime.AddDate(0, -1, 0))
+	}
 	containerName := cache.Store.PodCache.List[namespace][podName].Spec.Containers[0].Name
 	logOptions := &v1.PodLogOptions{
 		Container:  containerName,
 		Follow:     false,
 		Previous:   false,
+		SinceTime:  &sinceTime,
 		Timestamps: true,
 		LimitBytes: &byteReadLimit,
 		TailLines:  &lineReadLimit,

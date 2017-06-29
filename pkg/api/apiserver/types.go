@@ -197,6 +197,7 @@ type Logs struct {
 	EventType string    `json:",omitempty"`
 }
 
+//Process container's process
 type Process struct {
 	User        string  `json:"user"`
 	PID         int64   `json:"pid"`

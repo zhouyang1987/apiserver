@@ -8,11 +8,20 @@ import (
 
 	"apiserver/pkg/api/apiserver"
 	"apiserver/pkg/configz"
+	"apiserver/pkg/resource/common"
+	"apiserver/pkg/resource/configMap"
 	r "apiserver/pkg/router"
 	httpUtil "apiserver/pkg/util/registry"
+
+	"github.com/gorilla/mux"
 )
 
+//CreatDeploy create deploy record
+//1. get the request date of project
+//2. get the config of the project by step 1 's project data
+//3. insert the config and project data to the db ,at the same time create the k8s's resoure of configMap
 func CreatDeploy(request *http.Request) (string, interface{}) {
+	namespace := mux.Vars(request)["namespace"]
 	deploys, err := validateDeploy(request)
 	if err != nil {
 		return r.StatusInternalServerError, err
@@ -36,6 +45,7 @@ func CreatDeploy(request *http.Request) (string, interface{}) {
 			if err = json.NewDecoder(res.Body).Decode(&projectConfigOptions); err != nil {
 				return r.StatusInternalServerError, err
 			}
+			configMaps := []*apiserver.ConfigMap{}
 			for _, projectConfigOption := range projectConfigOptions {
 				createAt, _ := time.Parse("2006-01-02 15:04:05", projectConfigOption.CreateAt)
 				updateAt, _ := time.Parse("2006-01-02 15:04:05", projectConfigOption.UpdateAt)
@@ -51,6 +61,17 @@ func CreatDeploy(request *http.Request) (string, interface{}) {
 				if err = apiserver.InsertProjectConfig(projectConfig); err != nil {
 					return r.StatusInternalServerError, err
 				}
+				configMaps = append(configMaps, &apiserver.ConfigMap{Name: projectConfigOption.Key, Content: projectConfigOption.Val})
+			}
+
+			configGroup := &apiserver.ConfigGroup{
+				Name:       item.ProjectName + "_" + item.Tag,
+				Namespace:  namespace,
+				ConfigMaps: configMaps,
+			}
+			k8sConfigMap := configMap.NewConfigMapByConfig(configGroup)
+			if err = common.CreateResource(&k8sConfigMap); err != nil {
+				return r.StatusInternalServerError, err
 			}
 		}
 	}
@@ -67,3 +88,9 @@ func validateDeploy(request *http.Request) ([]*apiserver.Deploy, error) {
 }
 
 //反馈接口待定
+// func CallBack() {
+// 	tranport := httpUtil.GetHttpTransport(false)
+// 	url := configz.GetString("apiserver", "getConfigUrl", "http://localhost:8080/projects/%s/configs")
+// 	client := &http.Client{Transport: tranport}
+
+// }

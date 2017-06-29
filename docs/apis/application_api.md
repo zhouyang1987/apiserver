@@ -1196,7 +1196,7 @@ Method: GET
 #### <span id="13.4">获取容器的日志</span>
 
 
-URI: ApiURI/api/v1/{namespace}/containers/{name}/logs
+URI: ApiURI/api/v1/{namespace}/containers/{name}/logs?sinceTime=1h
 
 Method: GET
 
@@ -1204,10 +1204,11 @@ Method: GET
 
 - namespace: 镜像所属租户   必须字段
 - name: 容器名称 必须字段
+- sinceTime 容器日志时间开始时间，是相对于当前时间而言的，当前支持：1h 1小时 6h 6小时 1d 1天 1w 1周 1m 1月  以上六种粒度的查询
 
 **请求**
 
-- ApiURI//api/v1/huangjia/containers/nginx-test-1891245937-t2j17/events
+- ApiURI//api/v1/huangjia/containers/nginx-test-1891245937-t2j17/logs?sinceTime=1h
 
 
 **响应**

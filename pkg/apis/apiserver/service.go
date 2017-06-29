@@ -178,6 +178,7 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 	}
 
 	if verb == "roll" {
+		volumes := []v1.Volume{}
 		rollOption, err := validateRollOption(request)
 		if err != nil {
 			return r.StatusBadRequest, err
@@ -193,13 +194,23 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 
 		svc.Image = rollOption.Image
 		svc.Items[0].Image = rollOption.Image
-		svc.Config.ConfigGroup = rollOption.Conifg
-
-		// cfgMap := configMap.NewConfigMapByService(svc, namespace)
-		// if err := k8sclient.UpdateResouce(cfgMap); err != nil {
-		// 	return r.StatusInternalServerError, err
-		// }
-
+		if rollOption.Conifg != nil {
+			items := []v1.KeyToPath{}
+			for _, configMap := range rollOption.Conifg.ConfigMaps {
+				items = append(items, v1.KeyToPath{Key: configMap.Name, Path: configMap.Name})
+			}
+			volumes = append(volumes, v1.Volume{
+				Name: rollOption.Conifg.Name,
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: rollOption.Conifg.Name},
+						Items: items,
+					},
+				},
+			})
+		}
+		deploy.Spec.Template.Spec.Volumes = volumes
 		if err := k8sclient.UpdateResouce(&deploy); err != nil {
 			return r.StatusInternalServerError, "rolling updte application named " + svc.Name + ` failed`
 		}
