@@ -1,24 +1,112 @@
-package common
+// Copyright © 2017 huang jia <449264675@qq.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package client
 
 import (
+	"errors"
+	"fmt"
 	"io/ioutil"
+	"net/http"
 	"strings"
 
 	"apiserver/pkg/api/apiserver"
-	"apiserver/pkg/client"
+	"apiserver/pkg/configz"
 	"apiserver/pkg/resource"
 	"apiserver/pkg/resource/event"
 	"apiserver/pkg/util/log"
 	"apiserver/pkg/util/parseUtil"
 
+	docker "github.com/docker/docker/client"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/pkg/api/v1"
 	extensions "k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
-//CreateResource create namespace,service,replicationController
-func CreateResource(param interface{}) error {
+type Handler interface {
+	CreateResource(param interface{}) error
+	ExsitResource(param interface{}) bool
+	DeleteResource(param interface{}) error
+	UpdateResouce(param interface{}) error
+}
+
+var Client *Clientset
+
+type Clientset struct {
+	K8sClient      *k8s.Clientset
+	DockerClient   *docker.Client
+	Heapsterclient *http.Client
+	RegistryClient *http.Client
+}
+
+//init initialize the clientset
+func init() {
+	//create k8s clientset
+	config, err := clientcmd.BuildConfigFromFlags("", configz.GetString("apiserver", "k8s-config", "./config"))
+	if err != nil {
+		log.Fatalf("init k8s config err: %v", err)
+	}
+	k8sClient, err := k8s.NewForConfig(config)
+	if err != nil {
+		log.Fatalf("init k8s client err: %v", err)
+	}
+
+	//create docker client
+	host := configz.GetString("build", "endpoint", "127.0.0.1:2375")
+	version := configz.GetString("build", "version", "1.24")
+	cl := &http.Client{
+		Transport: new(http.Transport),
+	}
+	dockerClient, err := docker.NewClient(host, version, cl, nil)
+	if err != nil {
+		log.Fatalf("init docker client err: %v", err)
+	}
+
+	//create Clientset
+	Client = &Clientset{K8sClient: k8sClient, DockerClient: dockerClient, Heapsterclient: http.DefaultClient, RegistryClient: http.DefaultClient}
+}
+
+//NewClientset return Clientset
+func NewClientset(k8sconfig, dockerEndpoint, dockerAPIVersion string) (*Clientset, error) {
+	config, err := clientcmd.BuildConfigFromFlags("", k8sconfig)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("init k8s config err: %v", err))
+	}
+	k8sClient, err := k8s.NewForConfig(config)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("init k8s client err: %v", err))
+	}
+
+	//create docker client
+	cl := &http.Client{
+		Transport: new(http.Transport),
+	}
+	dockerClient, err := docker.NewClient(dockerEndpoint, dockerAPIVersion, cl, nil)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("init docker client err: %v", err))
+	}
+
+	//create Clientset
+	return &Clientset{K8sClient: k8sClient, DockerClient: dockerClient, Heapsterclient: http.DefaultClient, RegistryClient: http.DefaultClient}, nil
+}
+
+//CreateResource create namespace,service,replicationController,deployment,pod,configMa of k8s resource
+func (client *Clientset) CreateResource(param interface{}) error {
 	switch param.(type) {
 	case *v1.Namespace:
 		ns := param.(*v1.Namespace)
@@ -82,8 +170,8 @@ func CreateResource(param interface{}) error {
 	return nil
 }
 
-//ExsitResource decide namesapce,service,replicationController exsit or not by name;false is not exsit,true exsit
-func ExsitResource(param interface{}) bool {
+//ExsitResource decide namespace,service,replicationController,deployment,pod,configMap of k8s resource exsit or not by name;false is not exsit,true exsit
+func (client *Clientset) ExsitResource(param interface{}) bool {
 	switch param.(type) {
 	case v1.Namespace:
 		_, err := client.K8sClient.
@@ -139,8 +227,8 @@ func ExsitResource(param interface{}) bool {
 	return false
 }
 
-//DeleteResource delete namespace,service,replicationController
-func DeleteResource(param interface{}) error {
+//DeleteResource delete namespace,service,replicationController,deployment,pod,configMap of k8s resource
+func (client *Clientset) DeleteResource(param interface{}) error {
 	switch param.(type) {
 	case v1.Namespace:
 		ns := param.(v1.Namespace)
@@ -223,7 +311,8 @@ func DeleteResource(param interface{}) error {
 	return nil
 }
 
-func UpdateResouce(param interface{}) error {
+//UpdateResouce update namespace,service,replicationController,deployment,pod,configMap of k8s resource
+func (client *Clientset) UpdateResouce(param interface{}) error {
 	switch param.(type) {
 	case *v1.Namespace:
 		ns := param.(*v1.Namespace)
@@ -286,7 +375,8 @@ func UpdateResouce(param interface{}) error {
 	return nil
 }
 
-func GetPods(namespace, deployName string) ([]v1.Pod, error) {
+//GetPods return the pods of the give namespace and deployment's name
+func (client *Clientset) GetPods(namespace, deployName string) ([]v1.Pod, error) {
 	list, err := client.K8sClient.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: "name=" + deployName})
 	if err != nil {
 		return []v1.Pod{}, err
@@ -294,7 +384,8 @@ func GetPods(namespace, deployName string) ([]v1.Pod, error) {
 	return list.Items, nil
 }
 
-func CreateService(svc *v1.Service) (*v1.Service, error) {
+//CreateService create k8s service by service
+func (client *Clientset) CreateService(svc *v1.Service) (*v1.Service, error) {
 	service, err := client.K8sClient.
 		CoreV1().
 		Services(svc.Namespace).
@@ -307,7 +398,8 @@ func CreateService(svc *v1.Service) (*v1.Service, error) {
 	return service, nil
 }
 
-func GetDeploymentPods(appName, namespace string) ([]v1.Pod, error) {
+//GetDeploymentPods return deployment's pods by namespace and deployment's name
+func (client *Clientset) GetDeploymentPods(appName, namespace string) ([]v1.Pod, error) {
 	list, err := client.K8sClient.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: "name=" + appName})
 	if err != nil {
 		log.Errorf("get deployment [%v]'s pods err:%v", appName, err)
@@ -316,7 +408,8 @@ func GetDeploymentPods(appName, namespace string) ([]v1.Pod, error) {
 	return list.Items, nil
 }
 
-func GetEventsForContainer(namespace, containerName string) (list []event.Event, err error) {
+//GetEventsForContainer return pod's event by namespace and pod's name
+func (client *Clientset) GetEventsForContainer(namespace, containerName string) (list []event.Event, err error) {
 	listEvent, err := client.K8sClient.CoreV1().Events(namespace).List(resource.ListEverything)
 	if err != nil {
 		log.Errorf("get pod [%v]'s event err:%v", containerName, err)
@@ -338,7 +431,8 @@ func GetEventsForContainer(namespace, containerName string) (list []event.Event,
 	return
 }
 
-func GetEventsForService(namespace, serviceName string) (list []event.Event, err error) {
+//GetEventsForService return service's event by namespace and service's name
+func (client *Clientset) GetEventsForService(namespace, serviceName string) (list []event.Event, err error) {
 	listEvent, err := client.K8sClient.CoreV1().Events(namespace).List(resource.ListEverything)
 	if err != nil {
 		log.Errorf("get service [%v]'s event err:%v", serviceName, err)
@@ -377,7 +471,8 @@ func GetEventsForService(namespace, serviceName string) (list []event.Event, err
 	return
 }
 
-func GetLogForContainer(namespace, podName string, logOptions *v1.PodLogOptions) (string, error) {
+//GetLogForContainer return pod's log by namespace and pod's name
+func (client *Clientset) GetLogForContainer(namespace, podName string, logOptions *v1.PodLogOptions) (string, error) {
 	req := client.K8sClient.CoreV1().RESTClient().Get().
 		Namespace(namespace).
 		Name(podName).

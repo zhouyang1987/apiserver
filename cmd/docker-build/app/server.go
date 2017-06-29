@@ -50,6 +50,7 @@ func Run(server *Buildserver) error {
 	installApiGroup(api)
 	http.Handle("/", root)
 	log.Infof("starting buildserver and listen on : %v", fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort))
+	go configz.Heatload()
 	return http.ListenAndServe(fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort), nil)
 }
 

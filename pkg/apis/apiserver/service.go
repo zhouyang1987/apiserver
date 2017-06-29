@@ -1,3 +1,17 @@
+// Copyright © 2017 huang jia <449264675@qq.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package apiserver
 
 import (
@@ -8,9 +22,9 @@ import (
 	"time"
 
 	"apiserver/pkg/api/apiserver"
+	"apiserver/pkg/client"
 	"apiserver/pkg/configz"
 	"apiserver/pkg/resource"
-	k8sclient "apiserver/pkg/resource/common"
 	// "apiserver/pkg/resource/configMap"
 	"apiserver/pkg/resource/deployment"
 	"apiserver/pkg/resource/service"
@@ -54,7 +68,7 @@ func CreateService(request *http.Request) (string, interface{}) {
 	}
 
 	k8ssvc := service.NewService(app)
-	svc, err := k8sclient.CreateService(k8ssvc)
+	svc, err := client.Client.CreateService(k8ssvc)
 	if err != nil {
 		return r.StatusInternalServerError, err
 	}
@@ -63,8 +77,8 @@ func CreateService(request *http.Request) (string, interface{}) {
 	if cache.ExsitResource(app.UserName, reqservice.Name, resource.ResourceKindDeployment) {
 		return r.StatusForbidden, "the deployment exist"
 	}
-	if err = k8sclient.CreateResource(k8sDeploy); err != nil {
-		if err = k8sclient.DeleteResource(*svc); err != nil {
+	if err = client.Client.CreateResource(k8sDeploy); err != nil {
+		if err = client.Client.DeleteResource(*svc); err != nil {
 			return r.StatusInternalServerError, err
 		}
 		return r.StatusInternalServerError, err
@@ -73,7 +87,7 @@ func CreateService(request *http.Request) (string, interface{}) {
 	app.External = external
 	app.Items[0].External = external
 
-	podList, err := k8sclient.GetDeploymentPods(svc.Name, app.UserName)
+	podList, err := client.Client.GetDeploymentPods(svc.Name, app.UserName)
 	if err != nil {
 		return r.StatusInternalServerError, err
 	}
@@ -102,14 +116,14 @@ func DeleteService(request *http.Request) (string, interface{}) {
 	if !cache.ExsitResource(namespace, appName, resource.ResourceKindDeployment) {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
-	if err := k8sclient.DeleteResource(cache.Store.DeploymentCache.List[namespace][appName]); err != nil {
+	if err := client.Client.DeleteResource(cache.Store.DeploymentCache.List[namespace][appName]); err != nil {
 		return r.StatusInternalServerError, "delete application err: " + err.Error()
 	}
 
 	if !cache.ExsitResource(namespace, appName, resource.ResourceKindService) {
 		return r.StatusNotFound, "application named " + appName + ` does't exist`
 	}
-	if err := k8sclient.DeleteResource(cache.Store.ServiceCache.List[namespace][appName]); err != nil {
+	if err := client.Client.DeleteResource(cache.Store.ServiceCache.List[namespace][appName]); err != nil {
 		return r.StatusInternalServerError, "delete application err: " + err.Error()
 	}
 
@@ -140,7 +154,7 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 		}
 		deploy.Spec.Replicas = parseUtil.IntToInt32Pointer(scaleOption.ServiceInstanceCnt)
 		svc.InstanceCount = scaleOption.ServiceInstanceCnt
-		if err := k8sclient.UpdateResouce(&deploy); err != nil {
+		if err := client.Client.UpdateResouce(&deploy); err != nil {
 			return r.StatusInternalServerError, "rolling updte application named " + svc.Name + ` failed`
 		}
 		for _, container := range svc.Items {
@@ -171,7 +185,7 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 
 		svc.Items[0].Config.BaseConfig.Cpu = expansionOption.Cpu
 		svc.Items[0].Config.BaseConfig.Memory = expansionOption.Memory
-		if err := k8sclient.UpdateResouce(&deploy); err != nil {
+		if err := client.Client.UpdateResouce(&deploy); err != nil {
 			return r.StatusInternalServerError, "rolling updte application named " + svc.Name + ` failed`
 		}
 		apiserver.UpdateService(svc)
@@ -211,7 +225,7 @@ func UpdateServiceConfig(request *http.Request) (string, interface{}) {
 			})
 		}
 		deploy.Spec.Template.Spec.Volumes = volumes
-		if err := k8sclient.UpdateResouce(&deploy); err != nil {
+		if err := client.Client.UpdateResouce(&deploy); err != nil {
 			return r.StatusInternalServerError, "rolling updte application named " + svc.Name + ` failed`
 		}
 		apiserver.UpdateService(svc)
@@ -233,7 +247,7 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 
 	if verb == "stop" {
 		deploy.Spec.Replicas = parseUtil.IntToInt32Pointer(0)
-		if err := k8sclient.UpdateResouce(&deploy); err != nil {
+		if err := client.Client.UpdateResouce(&deploy); err != nil {
 			return r.StatusInternalServerError, err
 		}
 
@@ -247,7 +261,7 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 	if verb == "start" {
 		deploy.Spec.Replicas = parseUtil.IntToInt32Pointer(svc.InstanceCount)
 
-		if err := k8sclient.UpdateResouce(&deploy); err != nil {
+		if err := client.Client.UpdateResouce(&deploy); err != nil {
 			return r.StatusInternalServerError, err
 		}
 
@@ -255,12 +269,12 @@ func StopOrStartOrRedployService(request *http.Request) (string, interface{}) {
 		apiserver.UpdateServiceOnly(svc)
 	}
 	if verb == "redeploy" {
-		pods, err := k8sclient.GetPods(namespace, svc.Name)
+		pods, err := client.Client.GetPods(namespace, svc.Name)
 		if err != nil {
 			return r.StatusInternalServerError, err
 		}
 		for _, pod := range pods {
-			if err = k8sclient.DeleteResource(pod); err != nil {
+			if err = client.Client.DeleteResource(pod); err != nil {
 				return r.StatusInternalServerError, err
 			}
 		}
@@ -310,7 +324,7 @@ func validateRollOption(request *http.Request) (*apiserver.RollOption, error) {
 
 func ChangeServiceStatus(svc *apiserver.Service, namespace string) error {
 	time.Sleep(5 * time.Second)
-	podList, err := k8sclient.GetPods(namespace, svc.Name)
+	podList, err := client.Client.GetPods(namespace, svc.Name)
 	if err != nil {
 		return err
 	}
@@ -332,7 +346,7 @@ func ChangeServiceStatus(svc *apiserver.Service, namespace string) error {
 func GetServiceEvents(request *http.Request) (string, interface{}) {
 	namespace := mux.Vars(request)["namespace"]
 	containerName := mux.Vars(request)["name"]
-	list, err := k8sclient.GetEventsForContainer(namespace, containerName)
+	list, err := client.Client.GetEventsForContainer(namespace, containerName)
 	if err != nil {
 		return r.StatusInternalServerError, err
 	}

@@ -48,6 +48,7 @@ func Run(server *Apiserver) error {
 	installApiGroup(api)
 	http.Handle("/", root)
 	log.Infof("starting apiserver and listen on : %v", fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort))
+	go configz.Heatload()
 	go cache.List()
 	go cache.Watch()
 	return http.ListenAndServe(fmt.Sprintf("%v:%v", server.HttpAddr, server.HttpPort), nil)

@@ -17,10 +17,10 @@ package configz
 import (
 	"os"
 
-	// "apiserver/pkg/util/log"
+	"apiserver/pkg/util/log"
 
 	"github.com/Unknwon/goconfig"
-	// "github.com/howeyc/fsnotify"
+	"github.com/howeyc/fsnotify"
 )
 
 var (
@@ -65,9 +65,39 @@ func MustInt64(section, key string, defaultVal int64) int64 {
 }
 
 //watcher notify the config file, when the file was changed, reload the file to memory
-/*func Heatload() {
+func Heatload() {
+	config := os.Getenv("CONFIG_PATH")
 	wacther, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Errorf("create the file watcher err: %v", err)
 	}
-}*/
+	defer func() {
+		if err = wacther.Close(); err != nil {
+			log.Fatalf("close the file wather err:%v", err)
+		}
+	}()
+
+	wacther.Watch(config)
+	done := make(chan bool)
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Errorf("panic is happend: %v", err)
+			}
+		}()
+		for {
+			select {
+			case event := <-wacther.Event:
+				if event.IsCreate() || event.IsModify() || event.IsAttrib() {
+					cfg, err = goconfig.LoadConfigFile(config)
+					if err != nil {
+						panic(err)
+					}
+				}
+			case err := <-wacther.Error:
+				log.Errorf("the file watcher err: %v", err)
+			}
+		}
+	}()
+	<-done
+}

@@ -1,3 +1,17 @@
+// Copyright © 2017 huang jia <449264675@qq.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package apiserver
 
 import (
@@ -6,7 +20,7 @@ import (
 	"strconv"
 
 	"apiserver/pkg/api/apiserver"
-	k8sclient "apiserver/pkg/resource/common"
+	"apiserver/pkg/client"
 	"apiserver/pkg/resource/configMap"
 	r "apiserver/pkg/router"
 
@@ -29,7 +43,7 @@ func CreateConfig(request *http.Request) (string, interface{}) {
 	namespace := mux.Vars(request)["namespace"]
 	config.Namespace = namespace
 	cfgMap := configMap.NewConfigMapByConfig(config)
-	if err = k8sclient.CreateResource(&cfgMap); err != nil {
+	if err = client.Client.CreateResource(&cfgMap); err != nil {
 		return r.StatusInternalServerError, err
 	}
 
@@ -42,7 +56,7 @@ func DeleteConfig(request *http.Request) (string, interface{}) {
 	id, _ := strconv.ParseUint(mux.Vars(request)["id"], 10, 64)
 	cfg := apiserver.QueryConfigById(uint(id))
 	cfgMap := configMap.NewConfigMapByConfig(cfg)
-	if err := k8sclient.DeleteResource(cfgMap); err != nil {
+	if err := client.Client.DeleteResource(cfgMap); err != nil {
 		return r.StatusInternalServerError, err
 	}
 	apiserver.DeleteConfig(uint(id))
@@ -56,7 +70,7 @@ func DeleteConfigItem(request *http.Request) (string, interface{}) {
 	id, _ := strconv.ParseUint(mux.Vars(request)["id"], 10, 64)
 	cfg := apiserver.QueryConfigById(uint(id))
 	cfgMap := configMap.NewConfigMapByConfig(cfg)
-	if err := k8sclient.UpdateResouce(&cfgMap); err != nil {
+	if err := client.Client.UpdateResouce(&cfgMap); err != nil {
 		return r.StatusInternalServerError, err
 	}
 	return r.StatusOK, "ok"
@@ -76,7 +90,7 @@ func CreateConfigItem(request *http.Request) (string, interface{}) {
 
 	cfg := apiserver.QueryConfigById(uint(id))
 	cfgk8s := configMap.NewConfigMapByConfig(cfg)
-	if err := k8sclient.UpdateResouce(&cfgk8s); err != nil {
+	if err := client.Client.UpdateResouce(&cfgk8s); err != nil {
 		return r.StatusInternalServerError, err
 	}
 

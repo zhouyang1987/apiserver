@@ -1,3 +1,17 @@
+// Copyright © 2017 huang jia <449264675@qq.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package apiserver
 
 import (
@@ -9,10 +23,9 @@ import (
 	"time"
 
 	"apiserver/pkg/api/apiserver"
-	"apiserver/pkg/resource"
-
+	"apiserver/pkg/client"
 	"apiserver/pkg/configz"
-	k8sclient "apiserver/pkg/resource/common"
+	"apiserver/pkg/resource"
 	r "apiserver/pkg/router"
 	"apiserver/pkg/storage/cache"
 	httpUtil "apiserver/pkg/util/registry"
@@ -48,13 +61,13 @@ func RedeployContainer(request *http.Request) (string, interface{}) {
 		return r.StatusNotFound, "service named " + svc.Name + ` does't exist`
 	}
 
-	pods, err := k8sclient.GetPods(namespace, svc.Name)
+	pods, err := client.Client.GetPods(namespace, svc.Name)
 	if err != nil {
 		return r.StatusInternalServerError, err
 	}
 	for _, pod := range pods {
 		if pod.Name == container.Name {
-			if err = k8sclient.DeleteResource(&pod); err != nil {
+			if err = client.Client.DeleteResource(&pod); err != nil {
 				return r.StatusInternalServerError, err
 			}
 		}
@@ -75,7 +88,7 @@ func RedeployContainer(request *http.Request) (string, interface{}) {
 func GetContainerEvents(request *http.Request) (string, interface{}) {
 	namespace := mux.Vars(request)["namespace"]
 	containerName := mux.Vars(request)["name"]
-	list, err := k8sclient.GetEventsForContainer(namespace, containerName)
+	list, err := client.Client.GetEventsForContainer(namespace, containerName)
 	if err != nil {
 		return r.StatusInternalServerError, err
 	}
@@ -115,7 +128,7 @@ func GetContainerLog(request *http.Request) (string, interface{}) {
 		TailLines:  &lineReadLimit,
 	}
 
-	result, err := k8sclient.GetLogForContainer(namespace, podName, logOptions)
+	result, err := client.Client.GetLogForContainer(namespace, podName, logOptions)
 	if err != nil {
 		return r.StatusInternalServerError, err
 	}

@@ -1,3 +1,17 @@
+// Copyright © 2017 huang jia <449264675@qq.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cache
 
 import (
@@ -80,7 +94,7 @@ func init() {
 	}
 }
 
-//Sync ervery 30 Second to list k8s's resource to memory
+//List sync ervery 30 Second to list k8s's resource to memory
 func List() {
 	ticker := time.NewTicker(time.Second * 10)
 	for {
@@ -91,6 +105,7 @@ func List() {
 	}
 }
 
+//Watch sync ervery 30 Second to update the cntainer's status or insert container info to local database
 func Watch() {
 	ticker := time.NewTicker(time.Second * 15)
 	for {
@@ -152,7 +167,7 @@ func updateAppStatus() {
 
 //watch and list k8s's resource (namespace,service,replicationController) to resource memory
 func listResource() {
-	nsList, err := client.K8sClient.
+	nsList, err := client.Client.K8sClient.
 		CoreV1().
 		Namespaces().
 		List(metav1.ListOptions{})
@@ -165,7 +180,7 @@ func listResource() {
 		}
 	}
 	for k, v := range Store.NamespaceCache.List {
-		svcList, err := client.K8sClient.
+		svcList, err := client.Client.K8sClient.
 			CoreV1().
 			Services(v[k].ObjectMeta.Name).
 			List(metav1.ListOptions{})
@@ -175,7 +190,7 @@ func listResource() {
 			loop(svcList, v[k].ObjectMeta.Name)
 		}
 
-		dpList, err := client.K8sClient.
+		dpList, err := client.Client.K8sClient.
 			ExtensionsV1beta1().
 			Deployments(v[k].ObjectMeta.Name).
 			List(metav1.ListOptions{})
@@ -185,7 +200,7 @@ func listResource() {
 			loop(dpList, v[k].ObjectMeta.Name)
 		}
 
-		cfgMapList, err := client.K8sClient.
+		cfgMapList, err := client.Client.K8sClient.
 			CoreV1().
 			ConfigMaps(v[k].ObjectMeta.Name).
 			List(metav1.ListOptions{})
@@ -195,7 +210,7 @@ func listResource() {
 			loop(cfgMapList, v[k].ObjectMeta.Name)
 		}
 
-		podList, err := client.K8sClient.
+		podList, err := client.Client.K8sClient.
 			CoreV1().
 			Pods(v[k].ObjectMeta.Name).
 			List(metav1.ListOptions{})
@@ -277,6 +292,7 @@ func loop(param interface{}, nsname string) {
 	}
 }
 
+//ExsitResource decide namespace,service,replicationController,deployment,pod,configMap of k8s resource exsit or not by name;false is not exsit,true exsit
 func ExsitResource(namespace, resourceName, resourceKind string) bool {
 	switch resourceKind {
 	case resource.ResourceKindNamespace:
